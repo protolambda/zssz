@@ -41,7 +41,7 @@ TODO decoding:
 - [x] small basic-types
 - [ ] uint128/uint256
 - [x] containers
-- [ ] bytesN
+- [x] bytesN
 - [ ] vector
 - [ ] bytes
 - [ ] list
