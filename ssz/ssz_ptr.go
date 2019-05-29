@@ -35,7 +35,7 @@ func (v *SSZPtr) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	v.elemSSZ.Encode(eb, innerPtr)
 }
 
-func (v *SSZPtr) Decode(p unsafe.Pointer) {
+func (v *SSZPtr) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	innerPtr := unsafe.Pointer(*(*uintptr)(p))
-	v.elemSSZ.Decode(innerPtr)
+	return v.elemSSZ.Decode(dr, innerPtr)
 }
