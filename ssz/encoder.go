@@ -97,7 +97,7 @@ func (eb *sszEncBuf) toWriter(w io.Writer) (int64, error) {
 	return eb.buffer.WriteTo(w)
 }
 
-// writes an offset, calculated as len(forward) + fixedLen, to the buffer
+// writes an offset, calculated as len(forward) + fixedLen, to the end of the buffer
 func (eb *sszEncBuf) WriteOffset(fixedLen uint32) {
 	offset := uint32(eb.forward.Len())
 

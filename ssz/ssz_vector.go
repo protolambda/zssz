@@ -52,30 +52,7 @@ func (v *SSZVector) IsFixed() bool {
 }
 
 func (v *SSZVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
-	offset := uintptr(0)
-	if v.elemSSZ.IsFixed() {
-		for i := uint32(0); i < v.length; i++ {
-			elemPtr := unsafe.Pointer(uintptr(p) + offset)
-			offset += v.elemMemSize
-			v.elemSSZ.Encode(eb, elemPtr)
-		}
-	} else {
-		for i := uint32(0); i < v.length; i++ {
-			elemPtr := unsafe.Pointer(uintptr(p) + offset)
-			offset += v.elemMemSize
-			// write an offset to the fixed data, to find the dynamic data with as a reader
-			eb.WriteOffset(v.fixedLen)
-
-			// encode the dynamic data to a temporary buffer
-			temp := getPooledBuffer()
-			v.elemSSZ.Encode(temp, elemPtr)
-			// write it forward
-			eb.WriteForward(temp.Bytes())
-
-			releasePooledBuffer(temp)
-		}
-		eb.FlushForward()
-	}
+	EncodeSeries(v.elemSSZ, v.length, v.fixedLen, v.elemMemSize, eb, p)
 }
 
 func (v *SSZVector) Decode(p unsafe.Pointer) {

@@ -12,3 +12,7 @@ func GetSliceHeader(p unsafe.Pointer, length uint32) *reflect.SliceHeader {
 		Cap: int(length),
 	}
 }
+
+func ReadSliceHeader(p unsafe.Pointer) *reflect.SliceHeader {
+	return (*reflect.SliceHeader)(p)
+}
