@@ -35,9 +35,13 @@ func (v *SSZBytes) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	eb.Write(data)
 }
 
-func (v *SSZBytes) Decode(p unsafe.Pointer) {
-	// TODO
+func (v *SSZBytes) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+	sh := unsafe_util.ReadSliceHeader(p)
+	data := *(*[]byte)(unsafe.Pointer(sh))
+	_, err := dr.Read(data)
+	return err
 }
+
 func (v *SSZBytes) Ignore() {
 	// TODO skip ahead Length bytes in input
 }

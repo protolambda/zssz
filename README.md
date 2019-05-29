@@ -43,7 +43,7 @@ TODO decoding:
 - [x] containers
 - [x] bytesN
 - [x] vector
-- [ ] bytes
+- [x] bytes
 - [x] list
 
 TODO hashing:
