@@ -18,7 +18,7 @@ type SSZ interface {
 	// Reads object data from pointer, writes ssz-encoded data to sszEncBuf
 	Encode(eb *sszEncBuf, p unsafe.Pointer)
 	// Reads from input, populates object with read data
-	Decode(p unsafe.Pointer)
+	Decode(dr *SSZDecReader, p unsafe.Pointer) error
 	// Moves along input, ignores data, not populating any object
 	Ignore()
 }

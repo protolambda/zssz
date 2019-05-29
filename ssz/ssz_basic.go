@@ -2,6 +2,7 @@ package ssz
 
 import (
 	"encoding/binary"
+	"fmt"
 	"unsafe"
 )
 
@@ -23,8 +24,8 @@ func (v *SSZBasic) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	v.Encoder(eb, p)
 }
 
-func (v *SSZBasic) Decode(p unsafe.Pointer) {
-	v.Decoder(p)
+func (v *SSZBasic) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+	return v.Decoder(dr, p)
 }
 
 func (v *SSZBasic) Ignore() {
@@ -37,20 +38,62 @@ var sszBool = &SSZBasic{1, func(eb *sszEncBuf, p unsafe.Pointer) {
 	} else {
 		eb.buffer.WriteByte(0x01)
 	}
-}, placeholderDecoder}
+}, func(dr *SSZDecReader, p unsafe.Pointer) error {
+	b, err := dr.ReadByte()
+	if err != nil {
+		return err
+	}
+	if b == 0x00 {
+		*(*bool)(p) = false
+		return nil
+	} else if b == 0x01 {
+		*(*bool)(p) = true
+		return nil
+	} else {
+		return fmt.Errorf("bool value is invalid")
+	}
+}}
 
 var sszUint8 = &SSZBasic{1, func(eb *sszEncBuf, p unsafe.Pointer) {
 	eb.buffer.WriteByte(*(*byte)(p))
-}, placeholderDecoder}
+}, func(dr *SSZDecReader, p unsafe.Pointer) error {
+	b, err := dr.ReadByte()
+	if err != nil {
+		return err
+	}
+	*(*byte)(p) = b
+	return nil
+}}
 
 var sszUint16 = &SSZBasic{2, func(eb *sszEncBuf, p unsafe.Pointer) {
 	binary.LittleEndian.PutUint16(eb.NextBytes(2), *(*uint16)(p))
-}, placeholderDecoder}
+}, func(dr *SSZDecReader, p unsafe.Pointer) error {
+	v, err := dr.readUint16()
+	if err != nil {
+		return err
+	}
+	*(*uint16)(p) = v
+	return nil
+}}
 
 var sszUint32 = &SSZBasic{4, func(eb *sszEncBuf, p unsafe.Pointer) {
 	binary.LittleEndian.PutUint32(eb.NextBytes(4), *(*uint32)(p))
-}, placeholderDecoder}
+}, func(dr *SSZDecReader, p unsafe.Pointer) error {
+	v, err := dr.readUint32()
+	if err != nil {
+		return err
+	}
+	*(*uint32)(p) = binary.LittleEndian.Uint32(v)
+	return nil
+}}
 
 var sszUint64 = &SSZBasic{8, func(eb *sszEncBuf, p unsafe.Pointer) {
 	binary.LittleEndian.PutUint64(eb.NextBytes(8), *(*uint64)(p))
-}, placeholderDecoder}
+}, func(dr *SSZDecReader, p unsafe.Pointer) error {
+	v, err := dr.readUint64()
+	if err != nil {
+		return err
+	}
+	*(*uint64)(p) = binary.LittleEndian.Uint64(v)
+	return nil
+}}
