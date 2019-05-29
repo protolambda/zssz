@@ -9,30 +9,38 @@ import (
 
 type DecoderFn func(dr *SSZDecReader, pointer unsafe.Pointer) error
 
-func Decode(r ReadInput, val interface{}, sszTyp SSZ) error {
+func Decode(r io.Reader, val interface{}, sszTyp SSZ) error {
 	dr := NewSSZDecReader(r)
 	p := unsafe.Pointer(&val)
 	return sszTyp.Decode(dr, p)
 }
 
-type ReadInput interface {
-	io.Reader
-	io.ByteReader
-}
-
 type SSZDecReader struct {
-	input ReadInput
+	input io.Reader
 	scratch []byte
 	i uint32
+	max uint32
 }
 
-func NewSSZDecReader(input ReadInput) *SSZDecReader {
+func NewSSZDecReader(input io.Reader) *SSZDecReader {
 	return &SSZDecReader{input: input, scratch: make([]byte, 32, 32)}
 }
 
-// how far we have read so far
+// returns a scope of the SSZ reader. Re-uses same scratchpad.
+func (dr *SSZDecReader) Scope(count uint32) *SSZDecReader {
+	return &SSZDecReader{input: io.LimitReader(dr.input, int64(count)), scratch: dr.scratch, i: 0, max: count}
+}
+
+// how far we have read so far (scoped per container)
 func (dr *SSZDecReader) Index() uint32 {
 	return dr.i
+}
+
+// How far we can read (max - i = remaining bytes to read without error).
+// Note: when a child element is not fixed length,
+// the parent should set the scope, so that the child can infer its size from it.
+func (dr *SSZDecReader) Max() uint32 {
+	return dr.max
 }
 
 func (dr *SSZDecReader) Read(p []byte) (n int, err error) {
@@ -42,7 +50,8 @@ func (dr *SSZDecReader) Read(p []byte) (n int, err error) {
 
 func (dr *SSZDecReader) ReadByte() (byte, error) {
 	dr.i++
-	return dr.input.ReadByte()
+	_, err := dr.input.Read(dr.scratch[:1])
+	return dr.scratch[0], err
 }
 
 func (dr *SSZDecReader) readBytes(count uint8) error {

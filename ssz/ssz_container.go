@@ -81,7 +81,8 @@ func (v *SSZContainer) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	if v.IsFixed() {
 		for _, f := range v.Fields {
-			// if the container is fixed length, all fields are
+			// If the container is fixed length, all fields are.
+			// No need to redefine the scope for fixed-length SSZ objects.
 			if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 				return err
 			}
@@ -93,6 +94,7 @@ func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 		startIndex := dr.Index()
 		for _, f := range v.Fields {
 			if f.ssz.IsFixed() {
+				// No need to redefine the scope for fixed-length SSZ objects.
 				if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 					return err
 				}
@@ -109,14 +111,22 @@ func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 		if expectedIndex := v.fixedLen + startIndex; pivotIndex != expectedIndex {
 			return fmt.Errorf("expected to read to %d bytes, got to %d", expectedIndex, pivotIndex)
 		}
-		i := 0
-		for _, f := range v.Fields {
+		var currentOffset uint32
+		for i, f := range v.Fields {
 			if !f.ssz.IsFixed() {
-				if fieldIndex := dr.Index(); pivotIndex + offsets[i] != fieldIndex {
-					return fmt.Errorf("expected to read to %d bytes, got to %d", pivotIndex + offsets[i], fieldIndex)
+				currentOffset = dr.Index()
+				if offsets[i] != currentOffset {
+					return fmt.Errorf("expected to read to %d bytes, got to %d", offsets[i], currentOffset)
 				}
-				i++
-				if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
+				// calculate the scope based on next offset, and max. value of this scope for the last value
+				var count uint32
+				if i + 1 < len(v.Fields) {
+					count = offsets[i + 1] - currentOffset
+				} else {
+					count = dr.Max() - currentOffset
+				}
+				scoped := dr.Scope(count)
+				if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 					return err
 				}
 			}

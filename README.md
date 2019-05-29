@@ -101,7 +101,7 @@ func main() {
 	// -----------------------
 	var buf bytes.Buffer
 	bufWriter := bufio.NewWriter(&buf)
-	// Note that Encode takes everything that implements io.Writer
+	// Note that Encode takes any io.Writer
 	if err := Encode(bufWriter, &obj, myThingSSZ); err != nil {
 		panic(err)
 	}
@@ -110,7 +110,7 @@ func main() {
 	// decoding
 	// -----------------------
 	dst := MyThing{}
-	// note that Decode takes everything that implements io.Reader and io.ByteReader
+	// note that Decode takes any io.Reader
 	if err := Decode(&buf, &dst, myThingSSZ); err != nil {
 		panic(err)
 	}

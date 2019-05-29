@@ -59,10 +59,23 @@ func DecodeSeries(elemSSZ SSZ, length uint32, elemMemSize uintptr, dr *SSZDecRea
 		if expectedIndex := startIndex + (BYTES_PER_LENGTH_OFFSET * length); pivotIndex != expectedIndex {
 			return fmt.Errorf("expected to read to %d bytes, got to %d", expectedIndex, pivotIndex)
 		}
+		var currentOffset uint32
 		for i := uint32(0); i < length; i++ {
 			elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
 			memOffset += elemMemSize
-			if err := elemSSZ.Decode(dr, elemPtr); err != nil {
+			// scope: until next offset, or end if this is the last item.
+			currentOffset = dr.Index()
+			if currentOffset != offsets[i] {
+				return fmt.Errorf("expected to read to %d bytes, got to %d", offsets[i], currentOffset)
+			}
+			var count uint32
+			if i + 1 < length {
+				count = offsets[i + 1] - currentOffset
+			} else {
+				count = dr.Max() - currentOffset
+			}
+			scoped := dr.Scope(count)
+			if err := elemSSZ.Decode(scoped, elemPtr); err != nil {
 				return err
 			}
 		}
