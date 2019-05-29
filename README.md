@@ -3,9 +3,13 @@
 Highly optimized, yet readable, SSZ encoder. Uses unsafe Go, safely.
 
 Features:
-- Zero-allocations where possible (fixed-size is a work-in-progress, dynamic size will use buffer pooling)
-- Pre-compile all encoding/decoding/hashing logic for a type, then run it 10000X efficiently
-- No reflection during encoding/decoding/hashing execution of the compiled SSZ-type
+- Zero-allocations where possible
+   - offset checking allocates a small array of `uint32`s
+   - dynamic size uses buffer pooling to encode dynamic data *in order*
+- Construct all encoding/decoding/hashing logic for a type, then run it 10000 times the efficient way
+- No reflection during encoding/decoding/hashing execution of the constructed SSZ-type
+- Construction of SSZ types can also be used to support encoding of dynamic types
+
 
 **work in progress**
 
