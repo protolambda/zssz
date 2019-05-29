@@ -4,42 +4,83 @@ import (
 	"fmt"
 	"reflect"
 	"unsafe"
-	"zrnt-ssz/ssz/unsafe_util"
 )
 
-type SSZBytesN struct {
-	length uint32
+type VectorLength interface {
+	VectorLength() uint32
 }
 
-func NewSSZBytesN(typ reflect.Type) (*SSZBytesN, error) {
+type SSZVector struct {
+	length uint32
+	elemMemSize uintptr
+	elemSSZ SSZ
+	isFixedLen bool
+	fixedLen uint32
+}
+
+func NewSSZVector(typ reflect.Type) (*SSZVector, error) {
 	if typ.Kind() != reflect.Array {
-		return nil, fmt.Errorf("typ is not a fixed-length bytes array")
+		return nil, fmt.Errorf("typ is not a fixed-length array")
 	}
-	if typ.Elem().Kind() != reflect.Uint8 {
-		return nil, fmt.Errorf("typ is not a bytes array")
+	length := uint32(typ.Len())
+	elemTyp := typ.Elem()
+
+	elemSSZ, err := sszFactory(elemTyp)
+	if err != nil {
+		return nil, err
 	}
-	length := typ.Len()
-	res := &SSZBytesN{length: uint32(length)}
+	res := &SSZVector{
+		length: length,
+		elemMemSize: elemTyp.Size(),
+		elemSSZ: elemSSZ,
+		isFixedLen: elemSSZ.IsFixed(),
+		fixedLen: elemSSZ.FixedLen() * length,
+	}
 	return res, nil
 }
 
-func (v *SSZBytesN) FixedLen() uint32 {
+func (v *SSZVector) VectorLength() uint32 {
 	return v.length
 }
 
-func (v *SSZBytesN) IsFixed() bool {
-	return true
+func (v *SSZVector) FixedLen() uint32 {
+	return v.fixedLen
 }
 
-func (v *SSZBytesN) Encode(eb *sszEncBuf, p unsafe.Pointer) {
-	sh := unsafe_util.GetSliceHeader(p, v.length)
-	data := *(*[]byte)(unsafe.Pointer(sh))
-	eb.Write(data)
+func (v *SSZVector) IsFixed() bool {
+	return v.isFixedLen
 }
 
-func (v *SSZBytesN) Decode(p unsafe.Pointer) {
+func (v *SSZVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
+	offset := uintptr(0)
+	if v.elemSSZ.IsFixed() {
+		for i := uint32(0); i < v.length; i++ {
+			elemPtr := unsafe.Pointer(uintptr(p) + offset)
+			offset += v.elemMemSize
+			v.elemSSZ.Encode(eb, elemPtr)
+		}
+	} else {
+		for i := uint32(0); i < v.length; i++ {
+			elemPtr := unsafe.Pointer(uintptr(p) + offset)
+			offset += v.elemMemSize
+			// write an offset to the fixed data, to find the dynamic data with as a reader
+			eb.WriteOffset(v.fixedLen)
+
+			// encode the dynamic data to a temporary buffer
+			temp := getPooledBuffer()
+			v.elemSSZ.Encode(temp, elemPtr)
+			// write it forward
+			eb.WriteForward(temp.Bytes())
+
+			releasePooledBuffer(temp)
+		}
+		eb.FlushForward()
+	}
+}
+
+func (v *SSZVector) Decode(p unsafe.Pointer) {
 	// TODO
 }
-func (v *SSZBytesN) Ignore() {
+func (v *SSZVector) Ignore() {
 	// TODO skip ahead Length bytes in input
 }
