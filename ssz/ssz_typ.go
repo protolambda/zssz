@@ -49,17 +49,17 @@ func sszFactory(typ reflect.Type) (SSZ, error) {
 			return NewSSZVector(typ)
 		}
 	case reflect.Slice:
-		elem_typ := t.Elem()
+		elem_typ := typ.Elem()
 		switch elem_typ.Kind() {
-		// TODO bytes (dynamic length) encoding
+		case reflect.Uint8:
+			return NewSSZBytes(typ)
 		default:
-			// TODO: generic element type encoding
-			return nil, fmt.Errorf("ssz: unrecognized array element type")
+			return NewSSZList(typ)
 		}
-	case reflect.String:
-		// TODO string encoding
-		return nil, nil
+	//case reflect.String:
+	//	// TODO string encoding
+	//	return nil, nil
 	default:
-		return nil, fmt.Errorf("ssz: type %T cannot be serialized", t)
+		return nil, fmt.Errorf("ssz: type %T cannot be serialized", typ)
 	}
 }

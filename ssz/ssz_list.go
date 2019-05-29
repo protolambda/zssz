@@ -14,7 +14,7 @@ type SSZList struct {
 
 func NewSSZList(typ reflect.Type) (*SSZList, error) {
 	if typ.Kind() != reflect.Array {
-		return nil, fmt.Errorf("typ is not a fixed-length array")
+		return nil, fmt.Errorf("typ is not a dynamic-length array")
 	}
 	elemTyp := typ.Elem()
 

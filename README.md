@@ -24,18 +24,18 @@ TODO type-pre-compiling:
 - [ ] uint128/uint256
 - [x] containers
 - [x] bytesN
-- [ ] vector
-- [ ] bytes
-- [ ] list
+- [x] vector
+- [x] bytes
+- [x] list
 
 TODO encoding:
 - [x] small basic-types
 - [ ] uint128/uint256
 - [x] containers
 - [x] bytesN
-- [ ] vector
-- [ ] bytes
-- [ ] list
+- [x] vector
+- [x] bytes
+- [x] list
 
 TODO decoding:
 - [ ] small basic-types
