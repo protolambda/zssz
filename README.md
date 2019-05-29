@@ -16,7 +16,7 @@ TODO common:
 - [x] SSZ type interface
 - [x] typ constructor
 - [x] encoder interface
-- [ ] decoder interface
+- [x] decoder interface
 - [ ] hash-tree-root interface
 
 TODO type-pre-compiling:
@@ -38,9 +38,9 @@ TODO encoding:
 - [x] list
 
 TODO decoding:
-- [ ] small basic-types
+- [x] small basic-types
 - [ ] uint128/uint256
-- [ ] containers
+- [x] containers
 - [ ] bytesN
 - [ ] vector
 - [ ] bytes

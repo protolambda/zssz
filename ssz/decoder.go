@@ -21,17 +21,25 @@ type ReadInput interface {
 type SSZDecReader struct {
 	input ReadInput
 	scratch []byte
+	i uint32
 }
 
 func NewSSZDecReader(input ReadInput) *SSZDecReader {
 	return &SSZDecReader{input: input, scratch: make([]byte, 32, 32)}
 }
 
+// how far we have read so far
+func (dr *SSZDecReader) Index() uint32 {
+	return dr.i
+}
+
 func (dr *SSZDecReader) Read(p []byte) (n int, err error) {
+	dr.i += uint32(len(p))
 	return dr.input.Read(p)
 }
 
 func (dr *SSZDecReader) ReadByte() (byte, error) {
+	dr.i++
 	return dr.input.ReadByte()
 }
 
