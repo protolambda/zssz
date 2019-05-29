@@ -87,6 +87,8 @@ func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 			}
 		}
 	} else {
+		// technically we could also ignore offset correctness and skip ahead,
+		//  but we may want to enforce proper offsets.
 		offsets := make([]uint32, 0, v.offsetCount)
 		startIndex := dr.Index()
 		for _, f := range v.Fields {
@@ -104,8 +106,8 @@ func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 			}
 		}
 		pivotIndex := dr.Index()
-		if pivotIndex != v.fixedLen + startIndex {
-			return fmt.Errorf("expected to read to %d bytes, got to %d", v.fixedLen + startIndex, pivotIndex)
+		if expectedIndex := v.fixedLen + startIndex; pivotIndex != expectedIndex {
+			return fmt.Errorf("expected to read to %d bytes, got to %d", expectedIndex, pivotIndex)
 		}
 		i := 0
 		for _, f := range v.Fields {

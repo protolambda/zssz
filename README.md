@@ -42,9 +42,9 @@ TODO decoding:
 - [ ] uint128/uint256
 - [x] containers
 - [x] bytesN
-- [ ] vector
+- [x] vector
 - [ ] bytes
-- [ ] list
+- [x] list
 
 TODO hashing:
 - [ ] small basic-types

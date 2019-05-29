@@ -39,11 +39,12 @@ func (v *SSZList) IsFixed() bool {
 
 func (v *SSZList) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	sh := unsafe_util.ReadSliceHeader(p)
-	EncodeSeries(v.elemSSZ, uint32(sh.Len), 0, v.elemMemSize, eb, p)
+	EncodeSeries(v.elemSSZ, uint32(sh.Len), v.elemMemSize, eb, p)
 }
 
-func (v *SSZList) Decode(p unsafe.Pointer) {
-	// TODO
+func (v *SSZList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+	sh := unsafe_util.ReadSliceHeader(p)
+	return DecodeSeries(v.elemSSZ, uint32(sh.Len), v.elemMemSize, dr, p)
 }
 func (v *SSZList) Ignore() {
 	// TODO skip ahead Length bytes in input

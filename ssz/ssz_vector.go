@@ -52,12 +52,13 @@ func (v *SSZVector) IsFixed() bool {
 }
 
 func (v *SSZVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
-	EncodeSeries(v.elemSSZ, v.length, v.fixedLen, v.elemMemSize, eb, p)
+	EncodeSeries(v.elemSSZ, v.length, v.elemMemSize, eb, p)
 }
 
-func (v *SSZVector) Decode(p unsafe.Pointer) {
-	// TODO
+func (v *SSZVector)  Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+	return DecodeSeries(v.elemSSZ, v.length, v.elemMemSize, dr, p)
 }
+
 func (v *SSZVector) Ignore() {
 	// TODO skip ahead Length bytes in input
 }
