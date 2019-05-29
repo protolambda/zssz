@@ -12,13 +12,13 @@ type SSZList struct {
 	elemSSZ SSZ
 }
 
-func NewSSZList(typ reflect.Type) (*SSZList, error) {
+func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 	if typ.Kind() != reflect.Array {
 		return nil, fmt.Errorf("typ is not a dynamic-length array")
 	}
 	elemTyp := typ.Elem()
 
-	elemSSZ, err := sszFactory(elemTyp)
+	elemSSZ, err := factory(elemTyp)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +46,6 @@ func (v *SSZList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	sh := unsafe_util.ReadSliceHeader(p)
 	return DecodeSeries(v.elemSSZ, uint32(sh.Len), v.elemMemSize, dr, p)
 }
-func (v *SSZList) Ignore() {
-	// TODO skip ahead Length bytes in input
+func (v *SSZList) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
+
 }

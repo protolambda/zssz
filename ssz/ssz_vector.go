@@ -18,14 +18,14 @@ type SSZVector struct {
 	fixedLen uint32
 }
 
-func NewSSZVector(typ reflect.Type) (*SSZVector, error) {
+func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 	if typ.Kind() != reflect.Array {
 		return nil, fmt.Errorf("typ is not a fixed-length array")
 	}
 	length := uint32(typ.Len())
 	elemTyp := typ.Elem()
 
-	elemSSZ, err := sszFactory(elemTyp)
+	elemSSZ, err := factory(elemTyp)
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +59,6 @@ func (v *SSZVector)  Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return DecodeSeries(v.elemSSZ, v.length, v.elemMemSize, dr, p)
 }
 
-func (v *SSZVector) Ignore() {
-	// TODO skip ahead Length bytes in input
+func (v *SSZVector) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
+
 }

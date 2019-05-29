@@ -9,8 +9,10 @@ import (
 
 type DecoderFn func(dr *SSZDecReader, pointer unsafe.Pointer) error
 
-func placeholderDecoder(dr *SSZDecReader, p unsafe.Pointer) error {
-	return nil
+func Decode(r ReadInput, val interface{}, sszTyp SSZ) error {
+	dr := NewSSZDecReader(r)
+	p := unsafe.Pointer(&val)
+	return sszTyp.Decode(dr, p)
 }
 
 type ReadInput interface {

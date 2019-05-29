@@ -42,6 +42,6 @@ func (v *SSZBytes) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return err
 }
 
-func (v *SSZBytes) Ignore() {
-	// TODO skip ahead Length bytes in input
+func (v *SSZBytes) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
+
 }

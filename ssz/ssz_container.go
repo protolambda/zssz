@@ -22,7 +22,7 @@ type SSZContainer struct {
 	offsetCount uint32
 }
 
-func NewSSZContainer(typ reflect.Type) (*SSZContainer, error) {
+func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, error) {
 	if typ.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("typ is not a struct")
 	}
@@ -33,7 +33,7 @@ func NewSSZContainer(typ reflect.Type) (*SSZContainer, error) {
 		if tag_util.HasFlag(&field, SSZ_TAG, OMIT_FLAG) {
 			continue
 		}
-		fieldSSZ, err := sszFactory(field.Type)
+		fieldSSZ, err := factory(field.Type)
 		if err != nil {
 			return nil, err
 		}
@@ -125,6 +125,10 @@ func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return nil
 }
 
-func (v *SSZContainer) Ignore() {
-	// TODO skip ahead Length bytes in input
+func (v *SSZContainer) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
+
+}
+
+func (v *SSZContainer) SigningRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
+
 }

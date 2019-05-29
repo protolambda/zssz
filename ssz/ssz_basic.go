@@ -28,8 +28,8 @@ func (v *SSZBasic) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return v.Decoder(dr, p)
 }
 
-func (v *SSZBasic) Ignore() {
-	// TODO skip ahead Length bytes in input
+func (v *SSZBasic) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
+
 }
 
 var sszBool = &SSZBasic{1, func(eb *sszEncBuf, p unsafe.Pointer) {

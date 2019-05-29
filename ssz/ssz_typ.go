@@ -1,8 +1,6 @@
 package ssz
 
 import (
-	"fmt"
-	"reflect"
 	"unsafe"
 )
 
@@ -19,47 +17,11 @@ type SSZ interface {
 	Encode(eb *sszEncBuf, p unsafe.Pointer)
 	// Reads from input, populates object with read data
 	Decode(dr *SSZDecReader, p unsafe.Pointer) error
-	// Moves along input, ignores data, not populating any object
-	Ignore()
+	HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte
 }
 
-func sszFactory(typ reflect.Type) (SSZ, error) {
-	switch typ.Kind() {
-	case reflect.Ptr:
-		return sszFactory(typ.Elem())
-	case reflect.Bool:
-		return sszBool, nil
-	case reflect.Uint8:
-		return sszUint8, nil
-	case reflect.Uint16:
-		return sszUint16, nil
-	case reflect.Uint32:
-		return sszUint32, nil
-	case reflect.Uint64:
-		return sszUint64, nil
-	case reflect.Struct:
-		return NewSSZContainer(typ)
-	case reflect.Array:
-		elem_typ := typ.Elem()
-		switch elem_typ.Kind() {
-		case reflect.Uint8:
-			return NewSSZBytesN(elem_typ)
-		// TODO: we could optimize by creating special basic-type vectors, like BytesN, for the other basic types
-		default:
-			return NewSSZVector(typ)
-		}
-	case reflect.Slice:
-		elem_typ := typ.Elem()
-		switch elem_typ.Kind() {
-		case reflect.Uint8:
-			return NewSSZBytes(typ)
-		default:
-			return NewSSZList(typ)
-		}
-	//case reflect.String:
-	//	// TODO string encoding
-	//	return nil, nil
-	default:
-		return nil, fmt.Errorf("ssz: type %T cannot be serialized", typ)
-	}
+// SSZ definitions may also provide a way to compute a special hash-tree-root, for self-signed objects.
+type SignedSSZ interface {
+	SSZ
+	SigningRoot(hFn HashFn, pointer unsafe.Pointer) []byte
 }

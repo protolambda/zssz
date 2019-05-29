@@ -10,15 +10,6 @@ import (
 
 type EncoderFn func(eb *sszEncBuf, pointer unsafe.Pointer)
 
-// Encoder is implemented by types that require custom encoding rules
-// or want to encode private fields.
-type Encoder interface {
-	// EncodeSSZ should write the SSZ encoding of its receiver to w.
-	// If the implementation is a pointer method, it may also be
-	// called for nil pointers.
-	EncodeSSZ(io.Writer) error
-}
-
 func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	eb := bufferPool.Get().(*sszEncBuf)
 	defer bufferPool.Put(eb)
