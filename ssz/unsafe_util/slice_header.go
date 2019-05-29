@@ -1,18 +1,12 @@
 package unsafe_util
 
 import (
+	"reflect"
 	"unsafe"
 )
 
-// like reflect.SliceHeader. Unsafe.
-type SliceHeader struct {
-	Data uintptr
-	Len  int
-	Cap  int
-}
-
-func GetSliceHeader(p unsafe.Pointer, length uint32) *SliceHeader {
-	return &SliceHeader{
+func GetSliceHeader(p unsafe.Pointer, length uint32) *reflect.SliceHeader {
+	return &reflect.SliceHeader{
 		Data: uintptr(p),
 		Len: int(length),
 		Cap: int(length),
