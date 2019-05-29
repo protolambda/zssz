@@ -23,8 +23,8 @@ func (v *SSZBasic) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	v.Encoder(eb, p)
 }
 
-func (v *SSZBasic) Decode(pointer unsafe.Pointer) {
-	v.Decoder(pointer)
+func (v *SSZBasic) Decode(p unsafe.Pointer) {
+	v.Decoder(p)
 }
 
 func (v *SSZBasic) Ignore() {

@@ -57,17 +57,16 @@ func (v *SSZContainer) IsFixed() bool {
 }
 
 func (v *SSZContainer) Encode(eb *sszEncBuf, p unsafe.Pointer) {
-	u := uintptr(p)
 	for _, f := range v.Fields {
 		if f.ssz.IsFixed() {
-			f.ssz.Encode(eb, unsafe.Pointer(u+f.offset))
+			f.ssz.Encode(eb, unsafe.Pointer(uintptr(p)+f.offset))
 		} else {
 			// write an offset to the fixed data, to find the dynamic data with as a reader
 			eb.WriteOffset(v.fixedLen)
 
 			// encode the dynamic data to a temporary buffer
 			temp := getPooledBuffer()
-			f.ssz.Encode(temp, unsafe.Pointer(u+f.offset))
+			f.ssz.Encode(temp, unsafe.Pointer(uintptr(p)+f.offset))
 			// write it forward
 			eb.WriteForward(temp.Bytes())
 

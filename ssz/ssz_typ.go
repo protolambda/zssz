@@ -23,10 +23,10 @@ type SSZ interface {
 	Ignore()
 }
 
-func sszFactory(t reflect.Type) (SSZ, error) {
-	switch t.Kind() {
+func sszFactory(typ reflect.Type) (SSZ, error) {
+	switch typ.Kind() {
 	case reflect.Ptr:
-		return sszFactory(t.Elem())
+		return sszFactory(typ.Elem())
 	case reflect.Bool:
 		return sszBool, nil
 	case reflect.Uint8:
@@ -38,15 +38,15 @@ func sszFactory(t reflect.Type) (SSZ, error) {
 	case reflect.Uint64:
 		return sszUint64, nil
 	case reflect.Struct:
-		return NewSSZContainer(t)
+		return NewSSZContainer(typ)
 	case reflect.Array:
-		elem_typ := t.Elem()
+		elem_typ := typ.Elem()
 		switch elem_typ.Kind() {
 		case reflect.Uint8:
 			return NewSSZBytesN(elem_typ)
+		// TODO: we could optimize by creating special basic-type vectors, like BytesN, for the other basic types
 		default:
-			// TODO: generic element type encoding
-			return nil, fmt.Errorf("ssz: unrecognized array element type")
+			return NewSSZVector(typ)
 		}
 	case reflect.Slice:
 		elem_typ := t.Elem()
