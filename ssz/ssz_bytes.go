@@ -36,7 +36,8 @@ func (v *SSZBytes) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 }
 
 func (v *SSZBytes) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
-	sh := unsafe_util.ReadSliceHeader(p)
+	length := dr.Max() - dr.Index()
+	sh := unsafe_util.AllocateSliceSpaceAndBind(p, length, 1)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	_, err := dr.Read(data)
 	return err

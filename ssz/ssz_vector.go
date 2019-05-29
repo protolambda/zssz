@@ -56,7 +56,7 @@ func (v *SSZVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 }
 
 func (v *SSZVector)  Decode(dr *SSZDecReader, p unsafe.Pointer) error {
-	return DecodeSeries(v.elemSSZ, v.length, v.elemMemSize, dr, p)
+	return DecodeSeries(v.elemSSZ, v.length, v.elemMemSize, dr, p, false)
 }
 
 func (v *SSZVector) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
