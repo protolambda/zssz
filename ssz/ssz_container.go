@@ -66,12 +66,12 @@ func (v *SSZContainer) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 			eb.WriteOffset(v.fixedLen)
 
 			// encode the dynamic data to a temporary buffer
-			temp := getPooledBuffer()
+			temp := GetPooledBuffer()
 			f.ssz.Encode(temp, unsafe.Pointer(uintptr(p)+f.memOffset))
 			// write it forward
 			eb.WriteForward(temp.Bytes())
 
-			releasePooledBuffer(temp)
+			ReleasePooledBuffer(temp)
 		}
 	}
 	// All the dynamic data is appended to the fixed data

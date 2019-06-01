@@ -18,7 +18,7 @@ func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	p := unsafe.Pointer(&val)
 	sszTyp.Encode(eb, p)
 
-	_, err := eb.toWriter(w)
+	_, err := eb.ToWriter(w)
 	return err
 }
 
@@ -26,13 +26,13 @@ func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 //  and initialize buffers with the known fixed-size of a type, and maybe plus some extra if not fixed length?
 
 // get a cleaned buffer from the pool
-func getPooledBuffer() *sszEncBuf {
+func GetPooledBuffer() *sszEncBuf {
 	eb := bufferPool.Get().(*sszEncBuf)
 	eb.reset()
 	return eb
 }
 
-func releasePooledBuffer(eb *sszEncBuf) {
+func ReleasePooledBuffer(eb *sszEncBuf) {
 	bufferPool.Put(eb)
 }
 
@@ -51,7 +51,7 @@ func (eb *sszEncBuf) Bytes() []byte {
 	return eb.Bytes()
 }
 
-// writes to the forward buffer
+// Writes to the forward buffer.
 func (eb *sszEncBuf) WriteForward(p []byte) {
 	eb.forward.Write(p)
 }
@@ -67,7 +67,7 @@ func (eb *sszEncBuf) Write(p []byte) {
 	eb.buffer.Write(p)
 }
 
-// Write a single byte to the buffer
+// Write a single byte to the buffer.
 func (eb *sszEncBuf) WriteByte(v byte) {
 	eb.buffer.WriteByte(v)
 }
@@ -83,12 +83,12 @@ func (eb *sszEncBuf) NextBytes(growth int) []byte {
 	return data[growth:l + growth]
 }
 
-// toWriter writes accumulated output in buffer to given writer.
-func (eb *sszEncBuf) toWriter(w io.Writer) (int64, error) {
+// Writes accumulated output in buffer to given writer.
+func (eb *sszEncBuf) ToWriter(w io.Writer) (int64, error) {
 	return eb.buffer.WriteTo(w)
 }
 
-// writes an offset, calculated as len(forward) + fixedLen, to the end of the buffer
+// Writes an offset, calculated as len(forward) + fixedLen, to the end of the buffer
 func (eb *sszEncBuf) WriteOffset(fixedLen uint32) {
 	offset := uint32(eb.forward.Len())
 

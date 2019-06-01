@@ -23,12 +23,12 @@ func EncodeSeries(elemSSZ SSZ, length uint32, elemMemSize uintptr, eb *sszEncBuf
 			eb.WriteOffset(fixedLen)
 
 			// encode the dynamic data to a temporary buffer
-			temp := getPooledBuffer()
+			temp := GetPooledBuffer()
 			elemSSZ.Encode(temp, elemPtr)
 			// write it forward
 			eb.WriteForward(temp.Bytes())
 
-			releasePooledBuffer(temp)
+			ReleasePooledBuffer(temp)
 		}
 		eb.FlushForward()
 	}
