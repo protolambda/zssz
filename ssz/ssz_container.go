@@ -135,10 +135,23 @@ func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return nil
 }
 
-func (v *SSZContainer) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
-
+func (v *SSZContainer) HashTreeRoot(h *Hasher, p unsafe.Pointer) []byte {
+	leaf := func(i uint32) []byte {
+		f := v.Fields[i]
+		return f.ssz.HashTreeRoot(h, unsafe.Pointer(uintptr(p)+f.memOffset))
+	}
+	return Merkleize(h, uint32(len(v.Fields)), leaf)
 }
 
-func (v *SSZContainer) SigningRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
-
+func (v *SSZContainer) SigningRoot(h *Hasher, p unsafe.Pointer) []byte {
+	leaf := func(i uint32) []byte {
+		f := v.Fields[i]
+		return f.ssz.HashTreeRoot(h, unsafe.Pointer(uintptr(p)+f.memOffset))
+	}
+	// truncate last field
+	leafCount := uint32(len(v.Fields))
+	if leafCount != 0 {
+		leafCount--
+	}
+	return Merkleize(h, leafCount, leaf)
 }

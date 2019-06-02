@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"runtime"
 	"unsafe"
 )
 
@@ -12,7 +13,10 @@ type DecoderFn func(dr *SSZDecReader, pointer unsafe.Pointer) error
 func Decode(r io.Reader, val interface{}, sszTyp SSZ) error {
 	dr := NewSSZDecReader(r)
 	p := unsafe.Pointer(&val)
-	return sszTyp.Decode(dr, p)
+	err := sszTyp.Decode(dr, p)
+	// make sure the data of the object is kept around up to this point.
+	runtime.KeepAlive(&val)
+	return err
 }
 
 type SSZDecReader struct {

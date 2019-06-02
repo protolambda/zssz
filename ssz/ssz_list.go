@@ -48,6 +48,12 @@ func (v *SSZList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return DecodeSeries(v.elemSSZ, length, v.elemMemSize, dr, p, true)
 }
 
-func (v *SSZList) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
-
+func (v *SSZList) HashTreeRoot(h *Hasher, p unsafe.Pointer) []byte {
+	elemHtr := v.elemSSZ.HashTreeRoot
+	elemSize := v.elemMemSize
+	sh := unsafe_util.ReadSliceHeader(p)
+	leaf := func(i uint32) []byte {
+		return elemHtr(h, unsafe.Pointer(sh.Data+(elemSize * uintptr(i))))
+	}
+	return Merkleize(h, uint32(sh.Len), leaf)
 }

@@ -16,7 +16,7 @@ func SSZFactory(typ reflect.Type) (SSZ, error) {
 func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 	switch typ.Kind() {
 	case reflect.Ptr:
-		return factory(typ.Elem())
+		return NewSSZPtr(factory, typ)
 	case reflect.Bool:
 		return sszBool, nil
 	case reflect.Uint8:

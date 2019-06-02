@@ -43,6 +43,21 @@ func (v *SSZBytes) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return err
 }
 
-func (v *SSZBytes) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
-
+func (v *SSZBytes) HashTreeRoot(h *Hasher, p unsafe.Pointer) []byte {
+	sh := unsafe_util.ReadSliceHeader(p)
+	data := *(*[]byte)(unsafe.Pointer(sh))
+	dataLen := uint32(len(data))
+	leafCount := (dataLen + 31) >> 5
+	leaf := func(i uint32) []byte {
+		s := i << 5
+		e := (i + 1) << 5
+		// pad the length
+		if e > dataLen {
+			h.ResetScratch32()
+			copy(h.Scratch[:32], data[s:dataLen])
+			return h.Scratch[:32]
+		}
+		return data[s:e]
+	}
+	return Merkleize(h, leafCount, leaf)
 }

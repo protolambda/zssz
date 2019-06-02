@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"runtime"
 	"sync"
 	"unsafe"
 )
@@ -19,6 +20,10 @@ func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	sszTyp.Encode(eb, p)
 
 	_, err := eb.ToWriter(w)
+
+	// make sure the data of the object is kept around up to this point.
+	runtime.KeepAlive(&val)
+
 	return err
 }
 

@@ -11,11 +11,11 @@ type SSZPtr struct {
 	elemSSZ SSZ
 }
 
-func NewSSZPtr(typ reflect.Type) (*SSZPtr, error) {
+func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
 	if typ.Kind() != reflect.Ptr {
 		return nil, fmt.Errorf("typ is not a pointer")
 	}
-	elemSSZ, err := sszFactory(typ.Elem())
+	elemSSZ, err := factory(typ.Elem())
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +40,7 @@ func (v *SSZPtr) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return v.elemSSZ.Decode(dr, innerPtr)
 }
 
-func (v *SSZPtr) HashTreeRoot(hFn HashFn, pointer unsafe.Pointer) []byte {
-
+func (v *SSZPtr) HashTreeRoot(h *Hasher, p unsafe.Pointer) []byte {
+	innerPtr := unsafe.Pointer(*(*uintptr)(p))
+	return v.HashTreeRoot(h, innerPtr)
 }

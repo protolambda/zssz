@@ -41,12 +41,10 @@ func GetDepth(v uint32) (out uint8) {
 	return
 }
 
-var zeroHashes = make([][]byte, 32, 32) // TODO init zero hashes of order 0 - 32
-
 // Merkleize with log(N) space allocation
-func Merkleize(count uint32, leaf func(i uint32) []byte, combi func(a []byte, b []byte) []byte) []byte {
+func Merkleize(hasher *Hasher, count uint32, leaf func(i uint32) []byte) []byte {
 	if count == 0 {
-		return []byte{} // TODO fix zero hash
+		return make([]byte, 32)
 	}
 	if count == 1 {
 		return leaf(0)
@@ -63,7 +61,7 @@ func Merkleize(count uint32, leaf func(i uint32) []byte, combi func(a []byte, b 
 				break
 			} else {
 				// keep merging up if we are the right side
-				h = combi(tmp[j], h)
+				h = hasher.Combi(tmp[j], h)
 			}
 		}
 		// store the merge result (may be no merge, i.e. bottom leaf node)
@@ -81,16 +79,16 @@ func Merkleize(count uint32, leaf func(i uint32) []byte, combi func(a []byte, b 
 		}
 		// the initial merge in is mixing in work from the right.
 		// Initial work is the zero-hash at height j
-		h := zeroHashes[j]
+		h := hasher.ZeroHashes[j]
 		for ; j < depth; j++ {
 			if i & (uint32(1) << j) == 0 {
 				// left side: combine previous with zero-hash
 				// i.e. venture out to merge back closer to the root
-				h = combi(h, zeroHashes[j])
+				h = hasher.Combi(h, hasher.ZeroHashes[j])
 			} else {
 				// right side: combine left side with zero hash
 				// i.e. merge back with the work
-				h = combi(tmp[j], zeroHashes[j])
+				h = hasher.Combi(tmp[j], hasher.ZeroHashes[j])
 			}
 		}
 		j--

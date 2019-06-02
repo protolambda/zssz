@@ -118,7 +118,7 @@ var sszUint32 = &SSZBasic{
 		if err != nil {
 			return err
 		}
-		*(*uint32)(p) = binary.LittleEndian.Uint32(v)
+		*(*uint32)(p) = v
 		return nil
 	},
 	HTR: func(h *Hasher, p unsafe.Pointer) []byte {
@@ -138,7 +138,7 @@ var sszUint64 = &SSZBasic{
 		if err != nil {
 			return err
 		}
-		*(*uint64)(p) = binary.LittleEndian.Uint64(v)
+		*(*uint64)(p) = v
 		return nil
 	},
 	HTR: func(h *Hasher, p unsafe.Pointer) []byte {
