@@ -2,6 +2,7 @@ package ssz
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -27,7 +28,7 @@ type SSZDecReader struct {
 }
 
 func NewSSZDecReader(input io.Reader) *SSZDecReader {
-	return &SSZDecReader{input: input, scratch: make([]byte, 32, 32)}
+	return &SSZDecReader{input: input, scratch: make([]byte, 32, 32), i: 0, max: ^uint32(0)}
 }
 
 // returns a scope of the SSZ reader. Re-uses same scratchpad.
@@ -48,11 +49,18 @@ func (dr *SSZDecReader) Max() uint32 {
 }
 
 func (dr *SSZDecReader) Read(p []byte) (n int, err error) {
-	dr.i += uint32(len(p))
+	v := dr.i + uint32(len(p))
+	if v > dr.max {
+		return int(dr.i), fmt.Errorf("cannot read %d bytes, %d beyond scope", len(p), v - dr.max)
+	}
+	dr.i = v
 	return dr.input.Read(p)
 }
 
 func (dr *SSZDecReader) ReadByte() (byte, error) {
+	if dr.i + 1 > dr.max {
+		return 0, errors.New("cannot read a single byte, it is beyond scope")
+	}
 	dr.i++
 	_, err := dr.input.Read(dr.scratch[:1])
 	return dr.scratch[0], err

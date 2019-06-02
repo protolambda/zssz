@@ -39,13 +39,21 @@ func (v *SSZList) IsFixed() bool {
 
 func (v *SSZList) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	sh := unsafe_util.ReadSliceHeader(p)
-	EncodeSeries(v.elemSSZ, uint32(sh.Len), v.elemMemSize, eb, p)
+	if v.elemSSZ.IsFixed() {
+		EncodeFixedSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, unsafe.Pointer(sh.Data))
+	} else {
+		EncodeVarSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, unsafe.Pointer(sh.Data))
+	}
 }
 
 func (v *SSZList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
-	length := dr.Max() - dr.Index()
-	// put in worst-case length, 1 byte per element. DecodeSeries will adjust down before allocation.
-	return DecodeSeries(v.elemSSZ, length, v.elemMemSize, dr, p, true)
+	bytesLen := dr.Max() - dr.Index()
+	if v.elemSSZ.IsFixed() {
+		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.elemMemSize, dr, p)
+	} else {
+		// still pass the fixed length of the element, but just to check a minimum length requirement.
+		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.elemMemSize, dr, p)
+	}
 }
 
 func (v *SSZList) HashTreeRoot(h *Hasher, p unsafe.Pointer) []byte {

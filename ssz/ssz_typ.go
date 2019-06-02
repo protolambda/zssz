@@ -5,7 +5,7 @@ import (
 )
 
 // Note: when this is changed,
-//  don't forget to change the PutUint32 calls that make put the length in this allocated space.
+//  don't forget to change the Read/PutUint32 calls that handle the length value in this allocated space.
 const BYTES_PER_LENGTH_OFFSET = 4
 
 type SSZ interface {

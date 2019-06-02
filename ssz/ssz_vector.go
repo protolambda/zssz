@@ -52,11 +52,19 @@ func (v *SSZVector) IsFixed() bool {
 }
 
 func (v *SSZVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
-	EncodeSeries(v.elemSSZ, v.length, v.elemMemSize, eb, p)
+	if v.elemSSZ.IsFixed() {
+		EncodeFixedSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
+	} else {
+		EncodeVarSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
+	}
 }
 
 func (v *SSZVector)  Decode(dr *SSZDecReader, p unsafe.Pointer) error {
-	return DecodeSeries(v.elemSSZ, v.length, v.elemMemSize, dr, p, false)
+	if v.elemSSZ.IsFixed() {
+		return DecodeFixedSeries(v.elemSSZ.Decode, v.length, v.elemMemSize, dr, p)
+	} else {
+		return DecodeVarSeries(v.elemSSZ.Decode, v.length, v.elemMemSize, dr, p)
+	}
 }
 
 func (v *SSZVector) HashTreeRoot(h *Hasher, p unsafe.Pointer) []byte {
