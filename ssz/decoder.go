@@ -7,13 +7,15 @@ import (
 	"io"
 	"runtime"
 	"unsafe"
+	"zrnt-ssz/ssz/unsafe_util"
 )
 
 type DecoderFn func(dr *SSZDecReader, pointer unsafe.Pointer) error
 
 func Decode(r io.Reader, val interface{}, sszTyp SSZ) error {
 	dr := NewSSZDecReader(r)
-	p := unsafe.Pointer(&val)
+
+	p := unsafe_util.IfacePtrToPtr(&val)
 	err := sszTyp.Decode(dr, p)
 	// make sure the data of the object is kept around up to this point.
 	runtime.KeepAlive(&val)

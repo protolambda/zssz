@@ -86,7 +86,7 @@ type MyThing struct {
 
 func main() {
 	// building a SSZ type definition
-	myThingSSZ, _ := SSZFactory(reflect.TypeOf(new(MyThing)))
+	myThingSSZ, _ := SSZFactory(reflect.TypeOf(new(MyThing)).Elem())
 
 	// example instance filled with dummy data
 	obj := MyThing{

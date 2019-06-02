@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sync"
 	"unsafe"
+	"zrnt-ssz/ssz/unsafe_util"
 )
 
 type EncoderFn func(eb *sszEncBuf, pointer unsafe.Pointer)
@@ -16,7 +17,7 @@ func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	defer bufferPool.Put(eb)
 	eb.reset()
 
-	p := unsafe.Pointer(&val)
+	p := unsafe_util.IfacePtrToPtr(&val)
 	sszTyp.Encode(eb, p)
 
 	_, err := eb.ToWriter(w)

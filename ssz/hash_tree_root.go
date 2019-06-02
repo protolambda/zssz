@@ -4,12 +4,13 @@ import (
 	"encoding/binary"
 	"runtime"
 	"unsafe"
+	"zrnt-ssz/ssz/unsafe_util"
 )
 
 type HashTreeRootFn func(hfn *Hasher, pointer unsafe.Pointer) [32]byte
 
 func HashTreeRoot(h *Hasher, val interface{}, sszTyp SSZ) [32]byte {
-	p := unsafe.Pointer(&val)
+	p := unsafe_util.IfacePtrToPtr(&val)
 	out := sszTyp.HashTreeRoot(h, p)
 	// make sure the data of the object is kept around up to this point.
 	runtime.KeepAlive(&val)
