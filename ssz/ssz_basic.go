@@ -59,11 +59,7 @@ var sszBool = &SSZBasic{
 	},
 	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
 		d := [1]byte{}
-		if *(*bool)(p) {
-			d[0] = 0x01
-		} else {
-			d[0] = 0x00
-		}
+		d[0] = *(*byte)(p)
 		return h.Hash(d[:])
 	},
 }
