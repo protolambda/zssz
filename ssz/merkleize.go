@@ -41,18 +41,18 @@ func GetDepth(v uint32) (out uint8) {
 	return
 }
 
-var zeroHashes = make([][]byte, 32, 32)
+var zeroHashes = make([][]byte, 32, 32) // TODO init zero hashes of order 0 - 32
 
 // Merkleize with log(N) space allocation
 func Merkleize(count uint32, leaf func(i uint32) []byte, combi func(a []byte, b []byte) []byte) []byte {
 	if count == 0 {
-		return []byte{}
+		return []byte{} // TODO fix zero hash
 	}
 	if count == 1 {
 		return leaf(0)
 	}
-	depth := GetDepth(count) + 1
-	tmp := make([][]byte, depth, depth)
+	depth := GetDepth(count)
+	tmp := make([][]byte, depth + 1, depth + 1)
 	j := uint8(0)
 	for i := uint32(0); i < count; i++ {
 		h := leaf(i)
@@ -73,16 +73,14 @@ func Merkleize(count uint32, leaf func(i uint32) []byte, combi func(a []byte, b 
 	if (count - 1) & count != 0 {
 		i := count
 		j = 0
-		// walk up to the parent of the highest left-side (of the zero complement part)
-		// this node will be on the right side
-		for j = 0; j < depth; {
-			next := j + 1
-			if i & (uint32(1) << next) != 0 {
+		// walk up to the first right side
+		for ; j < depth; j++ {
+			if i & (uint32(1) << j) != 0 {
 				break
 			}
-			j = next
 		}
-		// the initial out of bounds combi is 0-hash at j
+		// the initial merge in is mixing in work from the right.
+		// Initial work is the zero-hash at height j
 		h := zeroHashes[j]
 		for ; j < depth; j++ {
 			if i & (uint32(1) << j) == 0 {
