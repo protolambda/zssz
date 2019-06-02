@@ -33,7 +33,8 @@ func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 		switch typ.Elem().Kind() {
 		case reflect.Uint8:
 			return NewSSZBytesN(typ)
-		// TODO: we could optimize by creating special basic-type vectors, like BytesN, for the other basic types
+		case reflect.Bool, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return NewSSZBasicVector(typ)
 		default:
 			return NewSSZVector(factory, typ)
 		}
@@ -46,11 +47,8 @@ func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 		default:
 			return NewSSZList(factory, typ)
 		}
-	//case reflect.String:
-	//	// TODO string encoding
-	//	return nil, nil
+	// TODO: union, null, uint128, uint256, string
 	default:
 		return nil, fmt.Errorf("ssz: type %T cannot be serialized", typ)
 	}
 }
-

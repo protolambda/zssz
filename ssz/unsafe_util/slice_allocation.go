@@ -2,6 +2,7 @@ package unsafe_util
 
 import (
 	"reflect"
+	"runtime"
 	"unsafe"
 )
 
@@ -15,5 +16,7 @@ func AllocateSliceSpaceAndBind(p unsafe.Pointer, length uint32, elemMemSize uint
 	contentsPtr := unsafe.Pointer(&data)
 	sh := GetSliceHeader(contentsPtr, length)
 	*(*reflect.SliceHeader)(p) = *sh
+	// keep the data around till we have made Pointer p point to it.
+	runtime.KeepAlive(&data)
 	return contentsPtr
 }

@@ -59,7 +59,7 @@ TODO hash-tree-root:
 - [ ] uint128/uint256
 - [x] containers
 - [x] bytesN
-- [ ] vector
+- [x] vector
 - [x] bytes
 - [x] list
 - [ ] union/null
@@ -126,7 +126,7 @@ func main() {
 		return hash.Sum(nil)
 	}
 	// get the root
-	root := HashTreeRoot(hashFn, &obj, myThingSSZ)
+	root := HashTreeRoot(NewHasher(hashFn), &obj, myThingSSZ)
 	fmt.Printf("root of my thing: %x\n", root)
 	
 	signingRoot := SigningRoot(hashFn, &obj, myThingSSZ.(SignedSSZ))
