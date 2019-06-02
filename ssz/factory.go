@@ -49,6 +49,6 @@ func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 		}
 	// TODO: union, null, uint128, uint256, string
 	default:
-		return nil, fmt.Errorf("ssz: type %T cannot be serialized", typ)
+		return nil, fmt.Errorf("ssz: type %s cannot be recognized", typ.String())
 	}
 }

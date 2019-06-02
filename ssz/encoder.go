@@ -78,17 +78,6 @@ func (eb *sszEncBuf) WriteByte(v byte) {
 	eb.buffer.WriteByte(v)
 }
 
-// Grow buffer by given amount of bytes if necessary, and return a slice of the next data, of the given length.
-func (eb *sszEncBuf) NextBytes(growth int) []byte {
-	c := eb.buffer.Cap()
-	l := eb.buffer.Len()
-	if l + growth >= c {
-		eb.buffer.Grow(l + growth - c)
-	}
-	data := eb.buffer.Bytes()
-	return data[growth:l + growth]
-}
-
 // Writes accumulated output in buffer to given writer.
 func (eb *sszEncBuf) ToWriter(w io.Writer) (int64, error) {
 	return eb.buffer.WriteTo(w)

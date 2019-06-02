@@ -89,7 +89,9 @@ var sszUint16 = &SSZBasic{
 	Length: 2,
 	ChunkPow: 4,
 	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
-		binary.LittleEndian.PutUint16(eb.NextBytes(2), *(*uint16)(p))
+		v := [2]byte{}
+		binary.LittleEndian.PutUint16(v[:], *(*uint16)(p))
+		eb.Write(v[:])
 	},
 	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
 		v, err := dr.readUint16()
@@ -110,7 +112,9 @@ var sszUint32 = &SSZBasic{
 	Length: 4,
 	ChunkPow: 3,
 	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
-		binary.LittleEndian.PutUint32(eb.NextBytes(4), *(*uint32)(p))
+		v := [4]byte{}
+		binary.LittleEndian.PutUint32(v[:], *(*uint32)(p))
+		eb.Write(v[:])
 	},
 	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
 		v, err := dr.readUint32()
@@ -131,7 +135,9 @@ var sszUint64 = &SSZBasic{
 	Length: 8,
 	ChunkPow: 2,
 	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
-		binary.LittleEndian.PutUint64(eb.NextBytes(8), *(*uint64)(p))
+		v := [8]byte{}
+		binary.LittleEndian.PutUint64(v[:], *(*uint64)(p))
+		eb.Write(v[:])
 	},
 	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
 		v, err := dr.readUint64()
