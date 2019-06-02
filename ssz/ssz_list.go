@@ -40,9 +40,9 @@ func (v *SSZList) IsFixed() bool {
 func (v *SSZList) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	sh := unsafe_util.ReadSliceHeader(p)
 	if v.elemSSZ.IsFixed() {
-		EncodeFixedSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, unsafe.Pointer(sh.Data))
+		EncodeFixedSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, sh.Data)
 	} else {
-		EncodeVarSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, unsafe.Pointer(sh.Data))
+		EncodeVarSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, sh.Data)
 	}
 }
 
@@ -61,7 +61,7 @@ func (v *SSZList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	elemSize := v.elemMemSize
 	sh := unsafe_util.ReadSliceHeader(p)
 	leaf := func(i uint32) []byte {
-		r := elemHtr(h, unsafe.Pointer(sh.Data+(elemSize * uintptr(i))))
+		r := elemHtr(h, unsafe.Pointer(uintptr(sh.Data)+(elemSize * uintptr(i))))
 		return r[:]
 	}
 	return h.MixIn(Merkleize(h, uint32(sh.Len), leaf), uint32(sh.Len))

@@ -1,18 +1,23 @@
 package unsafe_util
 
 import (
-	"reflect"
 	"unsafe"
 )
 
-func GetSliceHeader(p unsafe.Pointer, length uint32) *reflect.SliceHeader {
-	return &reflect.SliceHeader{
-		Data: uintptr(p),
+type SliceHeader struct {
+	Data unsafe.Pointer
+	Len  int
+	Cap  int
+}
+
+func GetSliceHeader(p unsafe.Pointer, length uint32) *SliceHeader {
+	return &SliceHeader{
+		Data: p,
 		Len: int(length),
 		Cap: int(length),
 	}
 }
 
-func ReadSliceHeader(p unsafe.Pointer) *reflect.SliceHeader {
-	return (*reflect.SliceHeader)(p)
+func ReadSliceHeader(p unsafe.Pointer) *SliceHeader {
+	return (*SliceHeader)(p)
 }

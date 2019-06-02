@@ -49,9 +49,9 @@ func (v *SSZBasicList) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		LittleEndianBasicSeriesEncode(eb, unsafe.Pointer(sh.Data), uint32(sh.Len) * v.elemSSZ.Length)
+		LittleEndianBasicSeriesEncode(eb, sh.Data, uint32(sh.Len) * v.elemSSZ.Length)
 	} else {
-		EncodeFixedSeries(v.elemSSZ.Encoder, uint32(sh.Len), uintptr(v.elemSSZ.Length), eb, unsafe.Pointer(sh.Data))
+		EncodeFixedSeries(v.elemSSZ.Encoder, uint32(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
 	}
 }
 
@@ -75,8 +75,8 @@ func (v *SSZBasicList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	sh := unsafe_util.ReadSliceHeader(p)
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		return LittleEndianBasicSeriesHTR(h, unsafe.Pointer(sh.Data), uint32(sh.Len), uint32(sh.Len) * v.elemSSZ.Length, v.elemSSZ.ChunkPow)
+		return LittleEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len) * v.elemSSZ.Length, v.elemSSZ.ChunkPow)
 	} else {
-		return BigEndianBasicSeriesHTR(h, unsafe.Pointer(sh.Data), uint32(sh.Len), uint32(sh.Len) * v.elemSSZ.Length, v.elemSSZ.ChunkPow)
+		return BigEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len) * v.elemSSZ.Length, v.elemSSZ.ChunkPow)
 	}
 }
