@@ -41,6 +41,8 @@ func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 		switch typ.Elem().Kind() {
 		case reflect.Uint8:
 			return NewSSZBytes(typ)
+		case reflect.Bool, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return NewSSZBasicList(typ)
 		default:
 			return NewSSZList(factory, typ)
 		}

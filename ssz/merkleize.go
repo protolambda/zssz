@@ -42,18 +42,21 @@ func GetDepth(v uint32) (out uint8) {
 }
 
 // Merkleize with log(N) space allocation
-func Merkleize(hasher *Hasher, count uint32, leaf func(i uint32) []byte) []byte {
+func Merkleize(hasher *Hasher, count uint32, leaf func(i uint32) []byte) (out [32]byte) {
 	if count == 0 {
-		return make([]byte, 32)
+		return
 	}
 	if count == 1 {
-		return leaf(0)
+		copy(out[:], leaf(0))
+		return
 	}
 	depth := GetDepth(count)
-	tmp := make([][]byte, depth + 1, depth + 1)
+	tmp := make([][32]byte, depth + 1, depth + 1)
 	j := uint8(0)
+	hArr := [32]byte{}
+	h := hArr[:]
 	for i := uint32(0); i < count; i++ {
-		h := leaf(i)
+		copy(h[:], leaf(i))
 		// merge back up from bottom to top, as far as we can
 		for j = 0; ; j++ {
 			// stop merging when we are in the left side of the next combi
@@ -61,11 +64,12 @@ func Merkleize(hasher *Hasher, count uint32, leaf func(i uint32) []byte) []byte 
 				break
 			} else {
 				// keep merging up if we are the right side
-				h = hasher.Combi(tmp[j], h)
+				v := hasher.Combi(tmp[j], hArr)
+				copy(h, v[:])
 			}
 		}
 		// store the merge result (may be no merge, i.e. bottom leaf node)
-		tmp[j] = h
+		copy(tmp[j][:], h)
 	}
 	// if count is not a power of 2
 	if (count - 1) & count != 0 {
@@ -79,21 +83,24 @@ func Merkleize(hasher *Hasher, count uint32, leaf func(i uint32) []byte) []byte 
 		}
 		// the initial merge in is mixing in work from the right.
 		// Initial work is the zero-hash at height j
-		h := hasher.ZeroHashes[j]
+		copy(h, hasher.ZeroHashes[j][:])
 		for ; j < depth; j++ {
 			if i & (uint32(1) << j) == 0 {
 				// left side: combine previous with zero-hash
 				// i.e. venture out to merge back closer to the root
-				h = hasher.Combi(h, hasher.ZeroHashes[j])
+				v := hasher.Combi(hArr, hasher.ZeroHashes[j])
+				copy(h, v[:])
 			} else {
 				// right side: combine left side with zero hash
 				// i.e. merge back with the work
-				h = hasher.Combi(tmp[j], hasher.ZeroHashes[j])
+				v := hasher.Combi(tmp[j], hasher.ZeroHashes[j])
+				copy(h, v[:])
 			}
 		}
 		j--
 		// store the merge result (may be no merge, i.e. bottom leaf node)
-		tmp[j] = h
+		copy(tmp[j][:], h)
 	}
-	return tmp[j]
+	copy(out[:], tmp[j][:])
+	return
 }

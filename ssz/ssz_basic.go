@@ -3,14 +3,17 @@ package ssz
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"unsafe"
 )
 
 type SSZBasic struct {
-	Length  uint32
-	Encoder EncoderFn
-	Decoder DecoderFn
-	HTR     HashTreeRootFn
+	Length   uint32
+	// 1 << ChunkPow == items of this basic type per chunk
+	ChunkPow uint8
+	Encoder  EncoderFn
+	Decoder  DecoderFn
+	HTR      HashTreeRootFn
 }
 
 func (v *SSZBasic) FixedLen() uint32 {
@@ -29,18 +32,15 @@ func (v *SSZBasic) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return v.Decoder(dr, p)
 }
 
-func (v *SSZBasic) HashTreeRoot(h *Hasher, pointer unsafe.Pointer) []byte {
+func (v *SSZBasic) HashTreeRoot(h *Hasher, pointer unsafe.Pointer) [32]byte {
 	return v.HTR(h, pointer)
 }
 
 var sszBool = &SSZBasic{
 	Length: 1,
+	ChunkPow: 5,
 	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
-		if *(*bool)(p) {
-			eb.buffer.WriteByte(0x01)
-		} else {
-			eb.buffer.WriteByte(0x00)
-		}
+		eb.buffer.WriteByte(*(*byte)(p))
 	},
 	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
 		b, err := dr.ReadByte()
@@ -57,19 +57,20 @@ var sszBool = &SSZBasic{
 			return fmt.Errorf("bool value is invalid")
 		}
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) []byte {
-		scratch := h.Scratch[:1]
+	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
+		d := [1]byte{}
 		if *(*bool)(p) {
-			scratch[0] = 0x01
+			d[0] = 0x01
 		} else {
-			scratch[0] = 0x00
+			d[0] = 0x00
 		}
-		return h.Hash(scratch)
+		return h.Hash(d[:])
 	},
 }
 
 var sszUint8 = &SSZBasic{
 	Length: 1,
+	ChunkPow: 5,
 	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
 		eb.buffer.WriteByte(*(*byte)(p))
 	},
@@ -81,15 +82,16 @@ var sszUint8 = &SSZBasic{
 		*(*byte)(p) = b
 		return nil
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) []byte {
-		scratch := h.Scratch[:1]
-		scratch[0] = *(*byte)(p)
-		return h.Hash(scratch)
+	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
+		d := [1]byte{}
+		d[0] = *(*byte)(p)
+		return h.Hash(d[:])
 	},
 }
 
 var sszUint16 = &SSZBasic{
 	Length: 2,
+	ChunkPow: 4,
 	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
 		binary.LittleEndian.PutUint16(eb.NextBytes(2), *(*uint16)(p))
 	},
@@ -101,15 +103,16 @@ var sszUint16 = &SSZBasic{
 		*(*uint16)(p) = v
 		return nil
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) []byte {
-		scratch := h.Scratch[:2]
-		binary.LittleEndian.PutUint16(scratch, *(*uint16)(p))
-		return h.Hash(scratch)
+	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
+		d := [2]byte{}
+		binary.LittleEndian.PutUint16(d[:], *(*uint16)(p))
+		return h.Hash(d[:])
 	},
 }
 
 var sszUint32 = &SSZBasic{
 	Length: 4,
+	ChunkPow: 3,
 	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
 		binary.LittleEndian.PutUint32(eb.NextBytes(4), *(*uint32)(p))
 	},
@@ -121,15 +124,16 @@ var sszUint32 = &SSZBasic{
 		*(*uint32)(p) = v
 		return nil
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) []byte {
-		scratch := h.Scratch[:4]
-		binary.LittleEndian.PutUint32(scratch, *(*uint32)(p))
-		return h.Hash(scratch)
+	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
+		d := [4]byte{}
+		binary.LittleEndian.PutUint32(d[:], *(*uint32)(p))
+		return h.Hash(d[:])
 	},
 }
 
 var sszUint64 = &SSZBasic{
 	Length: 8,
+	ChunkPow: 2,
 	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
 		binary.LittleEndian.PutUint64(eb.NextBytes(8), *(*uint64)(p))
 	},
@@ -141,9 +145,26 @@ var sszUint64 = &SSZBasic{
 		*(*uint64)(p) = v
 		return nil
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) []byte {
-		scratch := h.Scratch[:8]
-		binary.LittleEndian.PutUint64(scratch, *(*uint64)(p))
-		return h.Hash(scratch)
+	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
+		d := [8]byte{}
+		binary.LittleEndian.PutUint64(d[:], *(*uint64)(p))
+		return h.Hash(d[:])
 	},
+}
+
+func GetBasicSSZElemType(kind reflect.Kind) (*SSZBasic, error) {
+	switch kind {
+	case reflect.Bool:
+		return sszBool, nil
+	case reflect.Uint8:
+		return sszUint8, nil
+	case reflect.Uint16:
+		return sszUint16, nil
+	case reflect.Uint32:
+		return sszUint32, nil
+	case reflect.Uint64:
+		return sszUint64, nil
+	default:
+		return nil, fmt.Errorf("kind %d is not a basic type", kind)
+	}
 }

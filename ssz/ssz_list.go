@@ -56,12 +56,13 @@ func (v *SSZList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	}
 }
 
-func (v *SSZList) HashTreeRoot(h *Hasher, p unsafe.Pointer) []byte {
+func (v *SSZList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize
 	sh := unsafe_util.ReadSliceHeader(p)
 	leaf := func(i uint32) []byte {
-		return elemHtr(h, unsafe.Pointer(sh.Data+(elemSize * uintptr(i))))
+		r := elemHtr(h, unsafe.Pointer(sh.Data+(elemSize * uintptr(i))))
+		return r[:]
 	}
-	return Merkleize(h, uint32(sh.Len), leaf)
+	return h.MixIn(Merkleize(h, uint32(sh.Len), leaf), uint32(sh.Len))
 }

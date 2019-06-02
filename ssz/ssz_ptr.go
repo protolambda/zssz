@@ -40,7 +40,7 @@ func (v *SSZPtr) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	return v.elemSSZ.Decode(dr, innerPtr)
 }
 
-func (v *SSZPtr) HashTreeRoot(h *Hasher, p unsafe.Pointer) []byte {
+func (v *SSZPtr) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	innerPtr := unsafe.Pointer(*(*uintptr)(p))
 	return v.HashTreeRoot(h, innerPtr)
 }

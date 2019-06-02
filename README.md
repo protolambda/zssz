@@ -6,6 +6,7 @@ Features:
 - Zero-allocations where possible
    - offset checking allocates a small array of `uint32`s
    - dynamic size uses buffer pooling to encode dynamic data *in order*
+   - small value passing is preferred over passing slices, avoid memory on the heap. 
 - Construct all encoding/decoding/hashing logic for a type, then run it 10000 times the efficient way
 - No reflection during encoding/decoding/hashing execution of the constructed SSZ-type
 - Construction of SSZ types can also be used to support encoding of dynamic types
@@ -53,14 +54,14 @@ TODO decoding:
 - [x] list
 - [ ] union/null
 
-TODO hashing:
-- [ ] small basic-types
+TODO hash-tree-root:
+- [x] small basic-types
 - [ ] uint128/uint256
-- [ ] containers
-- [ ] bytesN
+- [x] containers
+- [x] bytesN
 - [ ] vector
-- [ ] bytes
-- [ ] list
+- [x] bytes
+- [x] list
 - [ ] union/null
 
 TODO testing:
