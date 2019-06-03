@@ -1,6 +1,10 @@
-# ZRNT-SSZ
+# ZSSZ
 
 Highly optimized SSZ encoder. Uses unsafe Go, safely.
+
+"ZSSZ", a.k.a. ZRNT-SSZ, is the SSZ version used and maintained for [ZRNT](https://github.com/protolambda/zrnt),
+ the ETH 2.0 Go executable spec.
+
 
 Features:
 - Zero-allocations where possible
@@ -28,21 +32,24 @@ Possibly supported in future:
 - union/null
 - uint128/uint256
 - strings
+- partials
 
 TODO testing:
 - pass spec tests
 - benchmarking. How does it compare to SSZ using reflection? And to the golang-serialization, Gob?
+- support for SSZ caching
 
 
 ## Usage
 
 Here is an example that illustrates the full usage:
 ```go
-package zssz
+package main
 
-import 
-	. "github.com/protolambda/zssz"
+import (
 	. "github.com/protolambda/zssz/types"
+	. "github.com/protolambda/zssz/htr"
+	. "github.com/protolambda/zssz"
 	"reflect"
 	"bytes"
     "bufio"
@@ -103,8 +110,10 @@ func main() {
 		hash.Write(input)
 		return hash.Sum(nil)
 	}
+	// re-use a hash function, and change it if you like
+	hasher := htr.NewHasher(hashFn)
 	// get the root
-	root := HashTreeRoot(NewHasher(hashFn), &obj, myThingSSZ)
+	root := HashTreeRoot(hasher, &obj, myThingSSZ)
 	fmt.Printf("root of my thing: %x\n", root)
 	
 	signingRoot := SigningRoot(hashFn, &obj, myThingSSZ.(SignedSSZ))

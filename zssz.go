@@ -1,4 +1,4 @@
-package zrnt_ssz
+package zssz
 
 import (
 	"io"
