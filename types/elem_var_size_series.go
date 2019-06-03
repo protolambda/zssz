@@ -34,7 +34,7 @@ func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint32, elemMemSize u
 	length := uint32(len(offsets))
 	var currentOffset uint32
 	memOffset := uintptr(0)
-	for i := uint32(0); i < length; i++ {
+	for i := uint32(0); i < length; {
 		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
 		memOffset += elemMemSize
 		// scope: until next offset, or end if this is the last item.
@@ -42,13 +42,23 @@ func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint32, elemMemSize u
 		if currentOffset != offsets[i] {
 			return fmt.Errorf("expected to read to data %d bytes, got to %d", offsets[i], currentOffset)
 		}
+		// go to next offset
+		i++
+		// calculate the scope based on next offset, and max. value of this scope for the last value
 		var count uint32
-		if i+1 < length {
-			count = offsets[i+1] - currentOffset
+		if i < length {
+			if offset := offsets[i]; offset < currentOffset {
+				return fmt.Errorf("offset %d is invalid", i)
+			} else {
+				count = offset - currentOffset
+			}
 		} else {
 			count = dr.Max() - currentOffset
 		}
-		scoped := dr.Scope(count)
+		scoped, err := dr.Scope(count)
+		if err != nil {
+			return err
+		}
 		if err := decFn(scoped, elemPtr); err != nil {
 			return err
 		}

@@ -131,11 +131,18 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 				// calculate the scope based on next offset, and max. value of this scope for the last value
 				var count uint32
 				if i < len(offsets) {
-					count = offsets[i] - currentOffset
+					if offset := offsets[i]; offset < currentOffset {
+						return fmt.Errorf("offset %d is invalid", i)
+					} else {
+						count = offset - currentOffset
+					}
 				} else {
 					count = dr.Max() - currentOffset
 				}
-				scoped := dr.Scope(count)
+				scoped, err := dr.Scope(count)
+				if err != nil {
+					return err
+				}
 				if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 					return err
 				}

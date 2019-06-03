@@ -22,8 +22,11 @@ func NewDecodingReader(input io.Reader) *DecodingReader {
 }
 
 // returns a scope of the SSZ reader. Re-uses same scratchpad.
-func (dr *DecodingReader) Scope(count uint32) *DecodingReader {
-	return &DecodingReader{input: io.LimitReader(dr.input, int64(count)), scratch: dr.scratch, i: 0, max: count}
+func (dr *DecodingReader) Scope(count uint32) (*DecodingReader, error) {
+	if span := dr.GetBytesSpan(); span < count {
+		return nil, fmt.Errorf("cannot create scoped decoding reader, scope of %d bytes is bigger than parent scope has available space %d", count, span)
+	}
+	return &DecodingReader{input: io.LimitReader(dr.input, int64(count)), scratch: dr.scratch, i: 0, max: count}, nil
 }
 
 func (dr *DecodingReader) UpdateIndexFromScoped(other *DecodingReader) {
@@ -90,4 +93,14 @@ func (dr *DecodingReader) ReadUint64() (uint64, error) {
 		return 0, err
 	}
 	return binary.LittleEndian.Uint64(dr.scratch[:8]), nil
+}
+
+// returns the remaining span that can be read
+func (dr *DecodingReader) GetBytesSpan() uint32 {
+	return dr.Max() - dr.Index()
+}
+
+// if strict, offsets are used and enforced.
+func (dr *DecodingReader) IsStrict() bool {
+	return false // TODO
 }
