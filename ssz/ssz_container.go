@@ -69,13 +69,17 @@ func (v *SSZContainer) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 			temp := GetPooledBuffer()
 			f.ssz.Encode(temp, unsafe.Pointer(uintptr(p)+f.memOffset))
 			// write it forward
-			eb.WriteForward(temp.Bytes())
+			eb.WriteForward(temp)
 
 			ReleasePooledBuffer(temp)
 		}
 	}
-	// All the dynamic data is appended to the fixed data
-	eb.FlushForward()
+	// Only flush if we need to.
+	// If not, forward can actually be filled with data from the parent container, and should not be flushed.
+	if !v.IsFixed() {
+		// All the dynamic data is appended to the fixed data
+		eb.FlushForward()
+	}
 }
 
 func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {

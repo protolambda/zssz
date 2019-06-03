@@ -26,7 +26,7 @@ func (v *SSZBytes) FixedLen() uint32 {
 }
 
 func (v *SSZBytes) IsFixed() bool {
-	return true
+	return false
 }
 
 func (v *SSZBytes) Encode(eb *sszEncBuf, p unsafe.Pointer) {

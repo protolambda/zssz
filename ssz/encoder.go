@@ -20,7 +20,7 @@ func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	p := unsafe_util.IfacePtrToPtr(&val)
 	sszTyp.Encode(eb, p)
 
-	_, err := eb.ToWriter(w)
+	_, err := eb.WriteTo(w)
 
 	// make sure the data of the object is kept around up to this point.
 	runtime.KeepAlive(&val)
@@ -54,17 +54,27 @@ type sszEncBuf struct {
 }
 
 func (eb *sszEncBuf) Bytes() []byte {
-	return eb.Bytes()
+	return eb.buffer.Bytes()
+}
+
+func (eb *sszEncBuf) Read(p []byte) (n int, err error) {
+	return eb.buffer.Read(p)
 }
 
 // Writes to the forward buffer.
-func (eb *sszEncBuf) WriteForward(p []byte) {
-	eb.forward.Write(p)
+func (eb *sszEncBuf) WriteForward(data io.Reader) {
+	_, err := eb.forward.ReadFrom(data)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Writes the forward buffer to the main buffer, and resets the forward buffer.
 func (eb *sszEncBuf) FlushForward() {
-	eb.buffer.Write(eb.forward.Bytes())
+	_, err := eb.buffer.ReadFrom(&eb.forward)
+	if err != nil {
+		panic(err)
+	}
 	eb.forward.Reset()
 }
 
@@ -79,7 +89,7 @@ func (eb *sszEncBuf) WriteByte(v byte) {
 }
 
 // Writes accumulated output in buffer to given writer.
-func (eb *sszEncBuf) ToWriter(w io.Writer) (int64, error) {
+func (eb *sszEncBuf) WriteTo(w io.Writer) (n int64, err error) {
 	return eb.buffer.WriteTo(w)
 }
 

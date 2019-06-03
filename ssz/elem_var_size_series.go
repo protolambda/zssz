@@ -20,7 +20,7 @@ func EncodeVarSeries(encFn EncoderFn, length uint32, elemMemSize uintptr, eb *ss
 		temp := GetPooledBuffer()
 		encFn(temp, elemPtr)
 		// write it forward
-		eb.WriteForward(temp.Bytes())
+		eb.WriteForward(temp)
 
 		ReleasePooledBuffer(temp)
 	}
