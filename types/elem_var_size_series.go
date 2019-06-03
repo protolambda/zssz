@@ -110,10 +110,6 @@ func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, elemMem
 		return fmt.Errorf("non-empty dynamic-length series has invalid starting index: %d", startIndex)
 	}
 
-	// technically we could also ignore offset correctness and skip ahead,
-	//  but we may want to enforce proper offsets.
-	offsets := make([]uint32, 0)
-
 	// Read first offset, with this we can calculate the amount of expected offsets, i.e. the length of a slice.
 	firstOffset, err := dr.ReadUint32()
 	if err != nil {
@@ -126,13 +122,15 @@ func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, elemMem
 
 	length := firstOffset / BYTES_PER_LENGTH_OFFSET
 
-	if maxLen, minLen := dr.Max(), minElemLen*length; minLen > maxLen {
+	if maxLen, minLen := uint64(dr.Max()), uint64(minElemLen)*uint64(length); minLen > maxLen {
 		return fmt.Errorf("cannot fit %d elements of each a minimum size %d (%d total bytes) in %d bytes", length, minElemLen, minLen, maxLen)
 	}
 
 	// We don't want elements to be put in the slice header memory,
 	// instead, we allocate the slice data, and change the contents-pointer in the header.
 	contentsPtr = ptrutil.AllocateSliceSpaceAndBind(p, length, elemMemSize)
+
+	offsets := make([]uint32, 0, length)
 
 	// add the first offset used in the length check
 	offsets = append(offsets, firstOffset)
