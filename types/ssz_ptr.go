@@ -5,6 +5,7 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
 )
@@ -12,17 +13,20 @@ import (
 // proxies SSZ behavior to the SSZ type of the object being pointed to.
 type SSZPtr struct {
 	elemSSZ SSZ
+	elemSize uintptr
 }
 
 func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
 	if typ.Kind() != reflect.Ptr {
 		return nil, fmt.Errorf("typ is not a pointer")
 	}
-	elemSSZ, err := factory(typ.Elem())
+	elemTyp := typ.Elem()
+	elemSize := elemTyp.Size()
+	elemSSZ, err := factory(elemTyp)
 	if err != nil {
 		return nil, err
 	}
-	return &SSZPtr{elemSSZ: elemSSZ}, nil
+	return &SSZPtr{elemSSZ: elemSSZ, elemSize: elemSize}, nil
 }
 
 func (v *SSZPtr) FixedLen() uint32 {
@@ -39,8 +43,9 @@ func (v *SSZPtr) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZPtr) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	innerPtr := unsafe.Pointer(*(*uintptr)(p))
-	return v.elemSSZ.Decode(dr, innerPtr)
+	contentsPtr := ptrutil.AllocateSpace(p, v.elemSize)
+	*(*uintptr)(p) = uintptr(contentsPtr)
+	return v.elemSSZ.Decode(dr, contentsPtr)
 }
 
 func (v *SSZPtr) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {

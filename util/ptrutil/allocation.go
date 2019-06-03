@@ -18,3 +18,12 @@ func AllocateSliceSpaceAndBind(p unsafe.Pointer, length uint32, elemMemSize uint
 	*(*SliceHeader)(p) = *sh
 	return dataSh.Data
 }
+
+// Allocates space of the given length and returns a pointer to the contents
+// Warning: this method does not zero the allocated space.
+func AllocateSpace(p unsafe.Pointer, length uintptr) unsafe.Pointer {
+	data := make([]byte, 0, length)
+	slicePtr := unsafe.Pointer(&data)
+	dataSh := ReadSliceHeader(slicePtr)
+	return dataSh.Data
+}
