@@ -12,7 +12,6 @@ func SSZFactory(typ reflect.Type) (SSZ, error) {
 	return DefaultSSZFactory(SSZFactory, typ)
 }
 
-
 func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 	switch typ.Kind() {
 	case reflect.Ptr:

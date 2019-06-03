@@ -2,10 +2,10 @@ package types
 
 import (
 	"errors"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	"github.com/protolambda/zssz/util/ptrutil"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	"zssz/util/ptrutil"
 )
 
 func EncodeFixedSeries(encFn EncoderFn, length uint32, elemMemSize uintptr, eb *EncodingBuffer, p unsafe.Pointer) {

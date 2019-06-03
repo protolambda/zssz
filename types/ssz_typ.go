@@ -1,10 +1,10 @@
 package types
 
 import (
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
 )
 
 // Note: when this is changed,

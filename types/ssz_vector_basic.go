@@ -2,18 +2,18 @@ package types
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/util/endianness"
 	"reflect"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
-	"zssz/util/endianness"
 )
 
 type SSZBasicVector struct {
 	elemKind reflect.Kind
-	elemSSZ *SSZBasic
-	length uint32
+	elemSSZ  *SSZBasic
+	length   uint32
 	fixedLen uint32
 }
 
@@ -34,8 +34,8 @@ func NewSSZBasicVector(typ reflect.Type) (*SSZBasicVector, error) {
 
 	res := &SSZBasicVector{
 		elemKind: elemKind,
-		elemSSZ: elemSSZ,
-		length: length,
+		elemSSZ:  elemSSZ,
+		length:   length,
 		fixedLen: length * elemSSZ.Length,
 	}
 	return res, nil

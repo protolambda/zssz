@@ -2,12 +2,12 @@ package types
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/util/tags"
 	"reflect"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
-	"zssz/util/tags"
 )
 
 const SSZ_TAG = "ssz"
@@ -19,9 +19,9 @@ type ContainerField struct {
 }
 
 type SSZContainer struct {
-	Fields     []ContainerField
-	isFixedLen bool
-	fixedLen   uint32
+	Fields      []ContainerField
+	isFixedLen  bool
+	fixedLen    uint32
 	offsetCount uint32
 }
 

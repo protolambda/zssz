@@ -2,11 +2,11 @@ package types
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
 	"reflect"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
 )
 
 // proxies SSZ behavior to the SSZ type of the object being pointed to.

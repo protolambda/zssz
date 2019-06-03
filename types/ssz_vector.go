@@ -2,11 +2,11 @@ package types
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
 	"reflect"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
 )
 
 type VectorLength interface {
@@ -14,11 +14,11 @@ type VectorLength interface {
 }
 
 type SSZVector struct {
-	length uint32
+	length      uint32
 	elemMemSize uintptr
-	elemSSZ SSZ
-	isFixedLen bool
-	fixedLen uint32
+	elemSSZ     SSZ
+	isFixedLen  bool
+	fixedLen    uint32
 }
 
 func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
@@ -33,11 +33,11 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 		return nil, err
 	}
 	res := &SSZVector{
-		length: length,
+		length:      length,
 		elemMemSize: elemTyp.Size(),
-		elemSSZ: elemSSZ,
-		isFixedLen: elemSSZ.IsFixed(),
-		fixedLen: elemSSZ.FixedLen() * length,
+		elemSSZ:     elemSSZ,
+		isFixedLen:  elemSSZ.IsFixed(),
+		fixedLen:    elemSSZ.FixedLen() * length,
 	}
 	return res, nil
 }
@@ -62,7 +62,7 @@ func (v *SSZVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZVector)  Decode(dr *DecodingReader, p unsafe.Pointer) error {
+func (v *SSZVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	if v.elemSSZ.IsFixed() {
 		return DecodeFixedSeries(v.elemSSZ.Decode, v.length, v.elemMemSize, dr, p)
 	} else {
@@ -74,7 +74,7 @@ func (v *SSZVector) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize
 	leaf := func(i uint32) []byte {
-		v := elemHtr(h, unsafe.Pointer(uintptr(p)+(elemSize * uintptr(i))))
+		v := elemHtr(h, unsafe.Pointer(uintptr(p)+(elemSize*uintptr(i))))
 		return v[:]
 	}
 	return Merkleize(h, v.length, leaf)

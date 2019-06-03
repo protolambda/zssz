@@ -2,17 +2,17 @@ package types
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
-	"zssz/util/ptrutil"
 )
 
 type SSZList struct {
 	elemMemSize uintptr
-	elemSSZ SSZ
+	elemSSZ     SSZ
 }
 
 func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
@@ -27,7 +27,7 @@ func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 	}
 	res := &SSZList{
 		elemMemSize: elemTyp.Size(),
-		elemSSZ: elemSSZ,
+		elemSSZ:     elemSSZ,
 	}
 	return res, nil
 }
@@ -64,7 +64,7 @@ func (v *SSZList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	elemSize := v.elemMemSize
 	sh := ptrutil.ReadSliceHeader(p)
 	leaf := func(i uint32) []byte {
-		r := elemHtr(h, unsafe.Pointer(uintptr(sh.Data)+(elemSize * uintptr(i))))
+		r := elemHtr(h, unsafe.Pointer(uintptr(sh.Data)+(elemSize*uintptr(i))))
 		return r[:]
 	}
 	return h.MixIn(Merkleize(h, uint32(sh.Len), leaf), uint32(sh.Len))

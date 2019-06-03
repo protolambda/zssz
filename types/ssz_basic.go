@@ -3,11 +3,11 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
 	"reflect"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
 )
 
 type SSZBasic struct {
@@ -40,7 +40,7 @@ func (v *SSZBasic) HashTreeRoot(h *Hasher, pointer unsafe.Pointer) [32]byte {
 }
 
 var sszBool = &SSZBasic{
-	Length: 1,
+	Length:   1,
 	ChunkPow: 5,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		eb.WriteByte(*(*byte)(p))
@@ -68,7 +68,7 @@ var sszBool = &SSZBasic{
 }
 
 var sszUint8 = &SSZBasic{
-	Length: 1,
+	Length:   1,
 	ChunkPow: 5,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		eb.WriteByte(*(*byte)(p))
@@ -89,7 +89,7 @@ var sszUint8 = &SSZBasic{
 }
 
 var sszUint16 = &SSZBasic{
-	Length: 2,
+	Length:   2,
 	ChunkPow: 4,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [2]byte{}
@@ -112,7 +112,7 @@ var sszUint16 = &SSZBasic{
 }
 
 var sszUint32 = &SSZBasic{
-	Length: 4,
+	Length:   4,
 	ChunkPow: 3,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [4]byte{}
@@ -135,7 +135,7 @@ var sszUint32 = &SSZBasic{
 }
 
 var sszUint64 = &SSZBasic{
-	Length: 8,
+	Length:   8,
 	ChunkPow: 2,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [8]byte{}

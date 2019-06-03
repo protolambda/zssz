@@ -6,10 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	. "github.com/protolambda/zssz/types"
 	"reflect"
 	"strings"
 	"testing"
-	. "zssz/types"
 )
 
 type getTypFn func() reflect.Type

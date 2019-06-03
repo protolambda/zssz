@@ -2,10 +2,10 @@ package types
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	"github.com/protolambda/zssz/util/ptrutil"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	"zssz/util/ptrutil"
 )
 
 // pointer must point to start of the series contents
@@ -43,8 +43,8 @@ func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint32, elemMemSize u
 			return fmt.Errorf("expected to read to data %d bytes, got to %d", offsets[i], currentOffset)
 		}
 		var count uint32
-		if i + 1 < length {
-			count = offsets[i + 1] - currentOffset
+		if i+1 < length {
+			count = offsets[i+1] - currentOffset
 		} else {
 			count = dr.Max() - currentOffset
 		}
@@ -120,13 +120,13 @@ func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, elemMem
 		return err
 	}
 
-	if firstOffset > bytesLen || (firstOffset % BYTES_PER_LENGTH_OFFSET) != 0 {
+	if firstOffset > bytesLen || (firstOffset%BYTES_PER_LENGTH_OFFSET) != 0 {
 		return fmt.Errorf("non-empty dynamic-length series has invalid first offset: %d", firstOffset)
 	}
 
 	length := firstOffset / BYTES_PER_LENGTH_OFFSET
 
-	if maxLen, minLen := dr.Max(), minElemLen * length; minLen > maxLen {
+	if maxLen, minLen := dr.Max(), minElemLen*length; minLen > maxLen {
 		return fmt.Errorf("cannot fit %d elements of each a minimum size %d (%d total bytes) in %d bytes", length, minElemLen, minLen, maxLen)
 	}
 
@@ -146,7 +146,7 @@ func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, elemMem
 		offsets = append(offsets, offset)
 	}
 
-	if expectedIndex, currentIndex := BYTES_PER_LENGTH_OFFSET * length, dr.Index(); currentIndex != expectedIndex {
+	if expectedIndex, currentIndex := BYTES_PER_LENGTH_OFFSET*length, dr.Index(); currentIndex != expectedIndex {
 		return fmt.Errorf("expected to read to %d bytes, got to %d", expectedIndex, currentIndex)
 	}
 

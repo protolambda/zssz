@@ -2,14 +2,14 @@ package zssz
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
+	. "github.com/protolambda/zssz/types"
+	"github.com/protolambda/zssz/util/ptrutil"
 	"io"
 	"runtime"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
-	. "zssz/types"
-	"zssz/util/ptrutil"
 )
 
 

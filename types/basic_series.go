@@ -2,11 +2,11 @@ package types
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/util/ptrutil"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
-	"zssz/util/ptrutil"
 )
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
@@ -59,7 +59,7 @@ func BigToLittleEndianChunk(data [32]byte, elemSize uint8) (out [32]byte) {
 	x := 0
 	for i := uint8(0); i < 32; i += elemSize {
 		for j := elemSize - 1; j >= 1; j-- {
-			out[x] = data[i | j]
+			out[x] = data[i|j]
 			x++
 		}
 		out[x] = data[i]

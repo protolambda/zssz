@@ -2,18 +2,18 @@ package types
 
 import (
 	"fmt"
+	. "github.com/protolambda/zssz/dec"
+	. "github.com/protolambda/zssz/enc"
+	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/util/endianness"
+	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
-	. "zssz/dec"
-	. "zssz/enc"
-	. "zssz/htr"
-	"zssz/util/endianness"
-	"zssz/util/ptrutil"
 )
 
 type SSZBasicList struct {
 	elemKind reflect.Kind
-	elemSSZ *SSZBasic
+	elemSSZ  *SSZBasic
 }
 
 func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
@@ -32,7 +32,7 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 
 	res := &SSZBasicList{
 		elemKind: elemKind,
-		elemSSZ: elemSSZ,
+		elemSSZ:  elemSSZ,
 	}
 	return res, nil
 }
@@ -52,7 +52,7 @@ func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		LittleEndianBasicSeriesEncode(eb, sh.Data, uint32(sh.Len) * v.elemSSZ.Length)
+		LittleEndianBasicSeriesEncode(eb, sh.Data, uint32(sh.Len)*v.elemSSZ.Length)
 	} else {
 		EncodeFixedSeries(v.elemSSZ.Encoder, uint32(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
 	}
@@ -60,13 +60,13 @@ func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 
 func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	bytesLen := dr.Max() - dr.Index()
-	if bytesLen % v.elemSSZ.Length != 0 {
+	if bytesLen%v.elemSSZ.Length != 0 {
 		return fmt.Errorf("cannot decode basic type array, input has is")
 	}
 	elemMemSize := uintptr(v.elemSSZ.Length)
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		contentsPtr := ptrutil.AllocateSliceSpaceAndBind(p, bytesLen / v.elemSSZ.Length, elemMemSize)
+		contentsPtr := ptrutil.AllocateSliceSpaceAndBind(p, bytesLen/v.elemSSZ.Length, elemMemSize)
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
 	} else {
 		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.FixedLen(), bytesLen, elemMemSize, dr, p)
@@ -78,8 +78,8 @@ func (v *SSZBasicList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		return LittleEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len) * v.elemSSZ.Length, v.elemSSZ.ChunkPow)
+		return LittleEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len)*v.elemSSZ.Length, v.elemSSZ.ChunkPow)
 	} else {
-		return BigEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len) * v.elemSSZ.Length, v.elemSSZ.ChunkPow)
+		return BigEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len)*v.elemSSZ.Length, v.elemSSZ.ChunkPow)
 	}
 }
