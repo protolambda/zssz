@@ -14,6 +14,7 @@ Features:
 - Construct all encoding/decoding/hashing logic for a type, then run it 10000 times the efficient way
 - No reflection during encoding/decoding/hashing execution of the constructed SSZ-type
 - Construction of SSZ types can also be used to support encoding of dynamic types
+- No dependencies other thn the standard Go libs.
 
 Supported types
 - small basic-types (`bool`, `uint8`, `uint16`, `uint32`, `uint64`)
@@ -91,13 +92,18 @@ func main() {
 	if err := Encode(bufWriter, &obj, myThingSSZ); err != nil {
 		panic(err)
 	}
-	fmt.Printf("encoded myThing: %x\n", buf.Bytes())
+    if err := bufWriter.Flush(); err != nil {
+		panic(err)
+    }
+    data := buf.Bytes()
+	fmt.Printf("encoded myThing: %x\n", data)
 
 	// decoding
 	// -----------------------
 	dst := MyThing{}
+	bytesLen := uint32(len(data))
 	// note that Decode takes any io.Reader
-	if err := Decode(&buf, &dst, myThingSSZ); err != nil {
+	if err := Decode(&buf, bytesLen, &dst, myThingSSZ); err != nil {
 		panic(err)
 	}
 	fmt.Printf("decoded myThing: some data from it: %v\n", dst.Bars[1].DogeImg[:])

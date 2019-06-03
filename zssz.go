@@ -1,6 +1,7 @@
 package zssz
 
 import (
+	"fmt"
 	"io"
 	"runtime"
 	"unsafe"
@@ -12,13 +13,20 @@ import (
 )
 
 
-func Decode(r io.Reader, val interface{}, sszTyp SSZ) error {
+func Decode(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) error {
 	dr := NewDecodingReader(r)
+	dr = dr.Scope(bytesLen)
 
 	p := ptrutil.IfacePtrToPtr(&val)
 	err := sszTyp.Decode(dr, p)
 	// make sure the data of the object is kept around up to this point.
 	runtime.KeepAlive(&val)
+	if err != nil {
+		return err
+	}
+	if readCount := dr.Index(); readCount != bytesLen {
+		return fmt.Errorf("read total of %d bytes, but expected %d", readCount, bytesLen)
+	}
 	return err
 }
 

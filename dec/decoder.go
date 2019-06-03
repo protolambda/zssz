@@ -26,6 +26,10 @@ func (dr *DecodingReader) Scope(count uint32) *DecodingReader {
 	return &DecodingReader{input: io.LimitReader(dr.input, int64(count)), scratch: dr.scratch, i: 0, max: count}
 }
 
+func (dr *DecodingReader) UpdateIndexFromScoped(other *DecodingReader) {
+	dr.i += other.i
+}
+
 // how far we have read so far (scoped per container)
 func (dr *DecodingReader) Index() uint32 {
 	return dr.i
@@ -39,6 +43,9 @@ func (dr *DecodingReader) Max() uint32 {
 }
 
 func (dr *DecodingReader) Read(p []byte) (n int, err error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
 	v := dr.i + uint32(len(p))
 	if v > dr.max {
 		return int(dr.i), fmt.Errorf("cannot read %d bytes, %d beyond scope", len(p), v - dr.max)

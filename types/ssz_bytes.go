@@ -40,8 +40,8 @@ func (v *SSZBytes) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 
 func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	length := dr.Max() - dr.Index()
-	sh := ptrutil.AllocateSliceSpaceAndBind(p, length, 1)
-	data := *(*[]byte)(unsafe.Pointer(sh))
+	ptrutil.AllocateSliceSpaceAndBind(p, length, 1)
+	data := *(*[]byte)(p)
 	_, err := dr.Read(data)
 	return err
 }

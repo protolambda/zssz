@@ -119,16 +119,19 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 			return fmt.Errorf("expected to read to %d bytes, got to %d", expectedIndex, pivotIndex)
 		}
 		var currentOffset uint32
-		for i, f := range v.Fields {
+		i := 0
+		for _, f := range v.Fields {
 			if !f.ssz.IsFixed() {
 				currentOffset = dr.Index()
 				if offsets[i] != currentOffset {
 					return fmt.Errorf("expected to read to %d bytes, got to %d", offsets[i], currentOffset)
 				}
+				// go to next offset
+				i++
 				// calculate the scope based on next offset, and max. value of this scope for the last value
 				var count uint32
-				if i + 1 < len(v.Fields) {
-					count = offsets[i + 1] - currentOffset
+				if i < len(offsets) {
+					count = offsets[i] - currentOffset
 				} else {
 					count = dr.Max() - currentOffset
 				}
@@ -136,6 +139,7 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 				if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 					return err
 				}
+				dr.UpdateIndexFromScoped(scoped)
 			}
 		}
 	}

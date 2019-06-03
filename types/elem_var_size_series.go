@@ -52,6 +52,7 @@ func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint32, elemMemSize u
 		if err := decFn(scoped, elemPtr); err != nil {
 			return err
 		}
+		dr.UpdateIndexFromScoped(scoped)
 	}
 	if i, m := dr.Index(), dr.Max(); i != m {
 		return fmt.Errorf("expected to finish reading the scope to max %d, got to %d", i, m)
