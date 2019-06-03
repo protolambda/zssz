@@ -1,10 +1,13 @@
-package ssz
+package types
 
 import (
 	"fmt"
 	"reflect"
 	"unsafe"
-	"zrnt-ssz/ssz/unsafe_util"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
+	"zssz/util/ptrutil"
 )
 
 type SSZList struct {
@@ -37,8 +40,8 @@ func (v *SSZList) IsFixed() bool {
 	return false
 }
 
-func (v *SSZList) Encode(eb *sszEncBuf, p unsafe.Pointer) {
-	sh := unsafe_util.ReadSliceHeader(p)
+func (v *SSZList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+	sh := ptrutil.ReadSliceHeader(p)
 	if v.elemSSZ.IsFixed() {
 		EncodeFixedSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, sh.Data)
 	} else {
@@ -46,7 +49,7 @@ func (v *SSZList) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	bytesLen := dr.Max() - dr.Index()
 	if v.elemSSZ.IsFixed() {
 		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.elemMemSize, dr, p)
@@ -59,7 +62,7 @@ func (v *SSZList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 func (v *SSZList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize
-	sh := unsafe_util.ReadSliceHeader(p)
+	sh := ptrutil.ReadSliceHeader(p)
 	leaf := func(i uint32) []byte {
 		r := elemHtr(h, unsafe.Pointer(uintptr(sh.Data)+(elemSize * uintptr(i))))
 		return r[:]

@@ -1,10 +1,13 @@
-package ssz
+package types
 
 import (
 	"fmt"
 	"reflect"
 	"unsafe"
-	"zrnt-ssz/ssz/endianness"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
+	"zssz/util/endianness"
 )
 
 type SSZBasicVector struct {
@@ -46,7 +49,7 @@ func (v *SSZBasicVector) IsFixed() bool {
 	return true
 }
 
-func (v *SSZBasicVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
+func (v *SSZBasicVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	// we can just write the data as-is in a few contexts:
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
@@ -57,7 +60,7 @@ func (v *SSZBasicVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZBasicVector) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+func (v *SSZBasicVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		return LittleEndianBasicSeriesDecode(dr, p, v.fixedLen, v.elemKind == reflect.Bool)
 	} else {

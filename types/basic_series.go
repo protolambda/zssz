@@ -1,21 +1,24 @@
-package ssz
+package types
 
 import (
 	"fmt"
 	"unsafe"
-	"zrnt-ssz/ssz/unsafe_util"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
+	"zssz/util/ptrutil"
 )
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
-func LittleEndianBasicSeriesEncode(eb *sszEncBuf, p unsafe.Pointer, bytesLen uint32) {
-	bytesSh := unsafe_util.GetSliceHeader(p, bytesLen)
+func LittleEndianBasicSeriesEncode(eb *EncodingBuffer, p unsafe.Pointer, bytesLen uint32) {
+	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 	eb.Write(data)
 }
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
-func LittleEndianBasicSeriesDecode(dr *SSZDecReader, p unsafe.Pointer, bytesLen uint32, isBoolElem bool) error {
-	bytesSh := unsafe_util.GetSliceHeader(p, bytesLen)
+func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLen uint32, isBoolElem bool) error {
+	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 	if _, err := dr.Read(data); err != nil {
 		return err
@@ -32,7 +35,7 @@ func LittleEndianBasicSeriesDecode(dr *SSZDecReader, p unsafe.Pointer, bytesLen 
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
 func LittleEndianBasicSeriesHTR(h *Hasher, p unsafe.Pointer, length uint32, bytesLen uint32, chunkPow uint8) [32]byte {
-	bytesSh := unsafe_util.GetSliceHeader(p, bytesLen)
+	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 	dataLen := uint32(len(data))
 
@@ -67,7 +70,7 @@ func BigToLittleEndianChunk(data [32]byte, elemSize uint8) (out [32]byte) {
 
 // counter-part of LittleEndianBasicSeriesHTR
 func BigEndianBasicSeriesHTR(h *Hasher, p unsafe.Pointer, length uint32, bytesLen uint32, chunkPow uint8) [32]byte {
-	bytesSh := unsafe_util.GetSliceHeader(p, bytesLen)
+	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 	dataLen := uint32(len(data))
 

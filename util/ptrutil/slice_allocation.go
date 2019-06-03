@@ -1,4 +1,4 @@
-package unsafe_util
+package ptrutil
 
 import (
 	"unsafe"

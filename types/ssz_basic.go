@@ -1,10 +1,13 @@
-package ssz
+package types
 
 import (
 	"encoding/binary"
 	"fmt"
 	"reflect"
 	"unsafe"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
 )
 
 type SSZBasic struct {
@@ -24,11 +27,11 @@ func (v *SSZBasic) IsFixed() bool {
 	return true
 }
 
-func (v *SSZBasic) Encode(eb *sszEncBuf, p unsafe.Pointer) {
+func (v *SSZBasic) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	v.Encoder(eb, p)
 }
 
-func (v *SSZBasic) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+func (v *SSZBasic) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return v.Decoder(dr, p)
 }
 
@@ -39,10 +42,10 @@ func (v *SSZBasic) HashTreeRoot(h *Hasher, pointer unsafe.Pointer) [32]byte {
 var sszBool = &SSZBasic{
 	Length: 1,
 	ChunkPow: 5,
-	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
-		eb.buffer.WriteByte(*(*byte)(p))
+	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
+		eb.WriteByte(*(*byte)(p))
 	},
-	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
+	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
 		b, err := dr.ReadByte()
 		if err != nil {
 			return err
@@ -67,10 +70,10 @@ var sszBool = &SSZBasic{
 var sszUint8 = &SSZBasic{
 	Length: 1,
 	ChunkPow: 5,
-	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
-		eb.buffer.WriteByte(*(*byte)(p))
+	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
+		eb.WriteByte(*(*byte)(p))
 	},
-	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
+	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
 		b, err := dr.ReadByte()
 		if err != nil {
 			return err
@@ -88,13 +91,13 @@ var sszUint8 = &SSZBasic{
 var sszUint16 = &SSZBasic{
 	Length: 2,
 	ChunkPow: 4,
-	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
+	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [2]byte{}
 		binary.LittleEndian.PutUint16(v[:], *(*uint16)(p))
 		eb.Write(v[:])
 	},
-	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
-		v, err := dr.readUint16()
+	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
+		v, err := dr.ReadUint16()
 		if err != nil {
 			return err
 		}
@@ -111,13 +114,13 @@ var sszUint16 = &SSZBasic{
 var sszUint32 = &SSZBasic{
 	Length: 4,
 	ChunkPow: 3,
-	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
+	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [4]byte{}
 		binary.LittleEndian.PutUint32(v[:], *(*uint32)(p))
 		eb.Write(v[:])
 	},
-	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
-		v, err := dr.readUint32()
+	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
+		v, err := dr.ReadUint32()
 		if err != nil {
 			return err
 		}
@@ -134,13 +137,13 @@ var sszUint32 = &SSZBasic{
 var sszUint64 = &SSZBasic{
 	Length: 8,
 	ChunkPow: 2,
-	Encoder: func(eb *sszEncBuf, p unsafe.Pointer) {
+	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [8]byte{}
 		binary.LittleEndian.PutUint64(v[:], *(*uint64)(p))
 		eb.Write(v[:])
 	},
-	Decoder: func(dr *SSZDecReader, p unsafe.Pointer) error {
-		v, err := dr.readUint64()
+	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
+		v, err := dr.ReadUint64()
 		if err != nil {
 			return err
 		}

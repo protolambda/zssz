@@ -11,67 +11,45 @@ Features:
 - No reflection during encoding/decoding/hashing execution of the constructed SSZ-type
 - Construction of SSZ types can also be used to support encoding of dynamic types
 
+Supported types
+- small basic-types (`bool`, `uint8`, `uint16`, `uint32`, `uint64`)
+- containers
+  - incl. optimizations for fixed-size only elements
+- vector
+  - `Vector`, optimized for fixed and variable size elements
+  - `BytesN`, optimized for bytes (fixed length)
+  - `BasicVector`, optimized for basic element types
+- list
+  - `List` optimized for fixed and variable size elements
+  - `Bytes`, optimized for bytes (dynamic length)
+  - `BasicList`, optimized for basic element types
 
-**work in progress**
-
-TODO common:
-- [x] Unsafe util to work with arrays/slices
-- [x] Encoding buffer, with functions tweaked for SSZ-readability
-- [x] Buffer pool
-- [x] SSZ type interface
-- [x] typ constructor
-- [x] encoder interface
-- [x] decoder interface
-- [x] hash-tree-root interface
-- [x] signing-root interface
-
-TODO type-pre-compiling:
-- [x] small basic-types
-- [ ] uint128/uint256
-- [x] containers
-- [x] bytesN
-- [x] vector
-- [x] bytes
-- [x] list
-
-TODO encoding:
-- [x] small basic-types
-- [ ] uint128/uint256
-- [x] containers
-- [x] bytesN
-- [x] vector
-- [x] bytes
-- [x] list
-- [ ] union/null
-
-TODO decoding:
-- [x] small basic-types
-- [ ] uint128/uint256
-- [x] containers
-- [x] bytesN
-- [x] vector
-- [x] bytes
-- [x] list
-- [ ] union/null
-
-TODO hash-tree-root:
-- [x] small basic-types
-- [ ] uint128/uint256
-- [x] containers
-- [x] bytesN
-- [x] vector
-- [x] bytes
-- [x] list
-- [ ] union/null
+Possibly supported in future:
+- union/null
+- uint128/uint256
+- strings
 
 TODO testing:
-- [ ] pass spec tests
-- [ ] benchmarking. How does it compare to SSZ using reflection? And to the golang-serialization, Gob?
+- pass spec tests
+- benchmarking. How does it compare to SSZ using reflection? And to the golang-serialization, Gob?
+
 
 ## Usage
 
 Here is an example that illustrates the full usage:
 ```go
+package zssz
+
+import 
+	. "github.com/protolambda/zssz"
+	. "github.com/protolambda/zssz/types"
+	"reflect"
+	"bytes"
+    "bufio"
+    "fmt"
+    "crypto/sha256"
+)
+
 type Bar struct {
 	DogeImg []byte
 	Timestamp uint64
@@ -152,7 +130,7 @@ Pure composition, without performance degradation
 package main
 
 import (
-	. "github.com/protolambda/zrnt-ssz/ssz"
+	. "github.com/protolambda/zssz/types"
 	"reflect"
 )
 

@@ -1,4 +1,6 @@
-package ssz
+package types
+
+import . "zssz/htr"
 
 const (
 	mask0 = ^uint32((1 << (1 << iota)) - 1)

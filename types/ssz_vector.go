@@ -1,9 +1,12 @@
-package ssz
+package types
 
 import (
 	"fmt"
 	"reflect"
 	"unsafe"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
 )
 
 type VectorLength interface {
@@ -51,7 +54,7 @@ func (v *SSZVector) IsFixed() bool {
 	return v.isFixedLen
 }
 
-func (v *SSZVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
+func (v *SSZVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	if v.elemSSZ.IsFixed() {
 		EncodeFixedSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
 	} else {
@@ -59,7 +62,7 @@ func (v *SSZVector) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZVector)  Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+func (v *SSZVector)  Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	if v.elemSSZ.IsFixed() {
 		return DecodeFixedSeries(v.elemSSZ.Decode, v.length, v.elemMemSize, dr, p)
 	} else {

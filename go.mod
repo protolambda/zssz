@@ -1,3 +1,3 @@
-module zrnt-ssz
+module zssz
 
 go 1.12

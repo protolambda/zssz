@@ -1,4 +1,4 @@
-package tag_util
+package tags
 
 import (
 	"reflect"

@@ -1,11 +1,14 @@
-package ssz
+package types
 
 import (
 	"fmt"
 	"reflect"
 	"unsafe"
-	"zrnt-ssz/ssz/endianness"
-	"zrnt-ssz/ssz/unsafe_util"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
+	"zssz/util/endianness"
+	"zssz/util/ptrutil"
 )
 
 type SSZBasicList struct {
@@ -42,8 +45,8 @@ func (v *SSZBasicList) IsFixed() bool {
 	return false
 }
 
-func (v *SSZBasicList) Encode(eb *sszEncBuf, p unsafe.Pointer) {
-	sh := unsafe_util.ReadSliceHeader(p)
+func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+	sh := ptrutil.ReadSliceHeader(p)
 
 	// we can just write the data as-is in a few contexts:
 	// - if we're in a little endian architecture
@@ -55,7 +58,7 @@ func (v *SSZBasicList) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZBasicList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	bytesLen := dr.Max() - dr.Index()
 	if bytesLen % v.elemSSZ.Length != 0 {
 		return fmt.Errorf("cannot decode basic type array, input has is")
@@ -63,7 +66,7 @@ func (v *SSZBasicList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 	elemMemSize := uintptr(v.elemSSZ.Length)
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		contentsPtr := unsafe_util.AllocateSliceSpaceAndBind(p, bytesLen / v.elemSSZ.Length, elemMemSize)
+		contentsPtr := ptrutil.AllocateSliceSpaceAndBind(p, bytesLen / v.elemSSZ.Length, elemMemSize)
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
 	} else {
 		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.FixedLen(), bytesLen, elemMemSize, dr, p)
@@ -72,7 +75,7 @@ func (v *SSZBasicList) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 
 func (v *SSZBasicList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
 	//elemSize := v.elemMemSize
-	sh := unsafe_util.ReadSliceHeader(p)
+	sh := ptrutil.ReadSliceHeader(p)
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		return LittleEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len) * v.elemSSZ.Length, v.elemSSZ.ChunkPow)

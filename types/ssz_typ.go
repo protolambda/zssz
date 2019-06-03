@@ -1,7 +1,10 @@
-package ssz
+package types
 
 import (
 	"unsafe"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
 )
 
 // Note: when this is changed,
@@ -13,10 +16,10 @@ type SSZ interface {
 	FixedLen() uint32
 	// If the type is fixed-size
 	IsFixed() bool
-	// Reads object data from pointer, writes ssz-encoded data to sszEncBuf
-	Encode(eb *sszEncBuf, p unsafe.Pointer)
+	// Reads object data from pointer, writes ssz-encoded data to EncodingBuffer
+	Encode(eb *EncodingBuffer, p unsafe.Pointer)
 	// Reads from input, populates object with read data
-	Decode(dr *SSZDecReader, p unsafe.Pointer) error
+	Decode(dr *DecodingReader, p unsafe.Pointer) error
 	HashTreeRoot(h *Hasher, pointer unsafe.Pointer) [32]byte
 }
 

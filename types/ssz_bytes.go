@@ -1,10 +1,13 @@
-package ssz
+package types
 
 import (
 	"fmt"
 	"reflect"
 	"unsafe"
-	"zrnt-ssz/ssz/unsafe_util"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
+	"zssz/util/ptrutil"
 )
 
 type SSZBytes struct {
@@ -29,22 +32,22 @@ func (v *SSZBytes) IsFixed() bool {
 	return false
 }
 
-func (v *SSZBytes) Encode(eb *sszEncBuf, p unsafe.Pointer) {
-	sh := unsafe_util.ReadSliceHeader(p)
+func (v *SSZBytes) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+	sh := ptrutil.ReadSliceHeader(p)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	eb.Write(data)
 }
 
-func (v *SSZBytes) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	length := dr.Max() - dr.Index()
-	sh := unsafe_util.AllocateSliceSpaceAndBind(p, length, 1)
+	sh := ptrutil.AllocateSliceSpaceAndBind(p, length, 1)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	_, err := dr.Read(data)
 	return err
 }
 
 func (v *SSZBytes) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
-	sh := unsafe_util.ReadSliceHeader(p)
+	sh := ptrutil.ReadSliceHeader(p)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	dataLen := uint32(len(data))
 	leafCount := (dataLen + 31) >> 5

@@ -1,4 +1,4 @@
-package ssz
+package zrnt_ssz
 
 import (
 	"bufio"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	. "zssz/types"
 )
 
 type getSSZFn func() (SSZ, error)
@@ -117,7 +118,7 @@ var testCases = []struct {
 		"cdab07000000ff010002000300", complexTestStructTest},
 }
 
-func TestSSZEncode(t *testing.T) {
+func TestEncode(t *testing.T) {
 	var buf bytes.Buffer
 	bufWriter := bufio.NewWriter(&buf)
 

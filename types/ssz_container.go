@@ -1,10 +1,13 @@
-package ssz
+package types
 
 import (
 	"fmt"
 	"reflect"
 	"unsafe"
-	"zrnt-ssz/ssz/tag_util"
+	. "zssz/dec"
+	. "zssz/enc"
+	. "zssz/htr"
+	"zssz/util/tags"
 )
 
 const SSZ_TAG = "ssz"
@@ -30,7 +33,7 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 	count := typ.NumField()
 	for i := 0; i < count; i++ {
 		field := typ.Field(i)
-		if tag_util.HasFlag(&field, SSZ_TAG, OMIT_FLAG) {
+		if tags.HasFlag(&field, SSZ_TAG, OMIT_FLAG) {
 			continue
 		}
 		fieldSSZ, err := factory(field.Type)
@@ -57,7 +60,7 @@ func (v *SSZContainer) IsFixed() bool {
 	return v.isFixedLen
 }
 
-func (v *SSZContainer) Encode(eb *sszEncBuf, p unsafe.Pointer) {
+func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	for _, f := range v.Fields {
 		if f.ssz.IsFixed() {
 			f.ssz.Encode(eb, unsafe.Pointer(uintptr(p)+f.memOffset))
@@ -82,7 +85,7 @@ func (v *SSZContainer) Encode(eb *sszEncBuf, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
+func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	if v.IsFixed() {
 		for _, f := range v.Fields {
 			// If the container is fixed length, all fields are.
@@ -104,7 +107,7 @@ func (v *SSZContainer) Decode(dr *SSZDecReader, p unsafe.Pointer) error {
 				}
 			} else {
 				// write an offset to the fixed data, to find the dynamic data with as a reader
-				offset, err := dr.readUint32()
+				offset, err := dr.ReadUint32()
 				if err != nil {
 					return err
 				}
