@@ -59,7 +59,8 @@ func LittleEndianBasicSeriesHTR(h *Hasher, p unsafe.Pointer, length uint32, byte
 		}
 		return data[s:e]
 	}
-	return Merkleize(h, length, leaf)
+	leafCount := (length + 31) >> 5
+	return Merkleize(h, leafCount, leaf)
 }
 
 func BigToLittleEndianChunk(data [32]byte, elemSize uint8) (out [32]byte) {
@@ -97,5 +98,6 @@ func BigEndianBasicSeriesHTR(h *Hasher, p unsafe.Pointer, length uint32, bytesLe
 		d = BigToLittleEndianChunk(d, elemSize)
 		return d[:]
 	}
-	return Merkleize(h, length, leaf)
+	leafCount := (length + 31) >> 5
+	return Merkleize(h, leafCount, leaf)
 }

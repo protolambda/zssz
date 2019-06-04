@@ -3,9 +3,11 @@ package zssz
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/protolambda/zssz/htr"
 	. "github.com/protolambda/zssz/types"
 	"reflect"
 	"strings"
@@ -184,6 +186,33 @@ func TestDecode(t *testing.T) {
 			if adjusted := strings.ReplaceAll(string(expected), "null", "[]"); string(res) != adjusted {
 				t.Errorf("decoded different data:\n     got %s\nexpected %s", res, adjusted)
 			}
+		})
+	}
+}
+
+func TestHashTreeRoot(t *testing.T) {
+	var buf bytes.Buffer
+
+	sha := sha256.New()
+	hashFn := func(input []byte) (out [32]byte) {
+		sha.Reset()
+		sha.Write(input)
+		copy(out[:], sha.Sum(nil))
+		return
+	}
+	// re-use a hash function, and change it if you like
+	hasher := htr.NewHasher(hashFn)
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			buf.Reset()
+			typ := tt.getTyp()
+			sszTyp, err := SSZFactory(typ)
+			if err != nil {
+				t.Error(err)
+			}
+			root := HashTreeRoot(hasher, tt.value, sszTyp)
+			t.Logf("root: %x\n", root)
 		})
 	}
 }
