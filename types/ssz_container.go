@@ -24,6 +24,7 @@ type SSZContainer struct {
 	fixedLen    uint32
 	minLen      uint32
 	offsetCount uint32
+	fuzzReqLen  uint32
 }
 
 func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, error) {
@@ -49,10 +50,16 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 			res.minLen += BYTES_PER_LENGTH_OFFSET + fieldSSZ.MinLen()
 			res.offsetCount++
 		}
+		res.fuzzReqLen += fieldSSZ.FuzzReqLen()
+
 		res.Fields = append(res.Fields, ContainerField{memOffset: field.Offset, ssz: fieldSSZ})
 	}
 	res.isFixedLen = res.offsetCount == 0
 	return res, nil
+}
+
+func (v *SSZContainer) FuzzReqLen() uint32 {
+	return v.fuzzReqLen
 }
 
 func (v *SSZContainer) MinLen() uint32 {
@@ -102,9 +109,9 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 			}
 		}
 	} else if dr.IsFuzzMode() {
-		lengthLeftOver := v.minLen
+		lengthLeftOver := v.fuzzReqLen
 		for _, f := range v.Fields {
-			lengthLeftOver -= f.ssz.MinLen()
+			lengthLeftOver -= f.ssz.FuzzReqLen()
 			span := dr.GetBytesSpan()
 			available := span - lengthLeftOver
 			scoped, err := dr.Scope(available)

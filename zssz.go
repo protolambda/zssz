@@ -14,7 +14,7 @@ import (
 
 
 func Decode(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) error {
-	if bytesLen < sszTyp.FixedLen() {
+	if bytesLen < sszTyp.MinLen() {
 		return fmt.Errorf("expected object length is larger than given bytesLen")
 	}
 	unscoped := NewDecodingReader(r)
@@ -37,6 +37,9 @@ func Decode(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) error {
 // Returns an error if data could not be decoded (something is wrong with the reader).
 // Second return value is the amount of bytes that were read, to cut the fuzzing input at if necessary.
 func DecodeFuzzBytes(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) (error, uint32) {
+	if bytesLen < sszTyp.FuzzReqLen() {
+		return fmt.Errorf("expected object fuzzing input length is larger than given bytesLen"), 0
+	}
 	unscoped := NewDecodingReader(r)
 	dr, err := unscoped.Scope(bytesLen)
 	if err != nil {

@@ -23,6 +23,10 @@ func NewSSZBytes(typ reflect.Type) (*SSZBytes, error) {
 	return &SSZBytes{}, nil
 }
 
+func (v *SSZBytes) FuzzReqLen() uint32 {
+	return 4
+}
+
 func (v *SSZBytes) FixedLen() uint32 {
 	return 0
 }

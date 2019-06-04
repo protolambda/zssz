@@ -26,6 +26,10 @@ func NewSSZBytesN(typ reflect.Type) (*SSZBytesN, error) {
 	return res, nil
 }
 
+func (v *SSZBytesN) FuzzReqLen() uint32 {
+	return v.length
+}
+
 func (v *SSZBytesN) VectorLength() uint32 {
 	return v.length
 }

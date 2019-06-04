@@ -37,6 +37,10 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	return res, nil
 }
 
+func (v *SSZBasicList) FuzzReqLen() uint32 {
+	return 4
+}
+
 func (v *SSZBasicList) MinLen() uint32 {
 	return 0
 }

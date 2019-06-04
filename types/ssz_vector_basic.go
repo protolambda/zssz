@@ -41,6 +41,11 @@ func NewSSZBasicVector(typ reflect.Type) (*SSZBasicVector, error) {
 	return res, nil
 }
 
+func (v *SSZBasicVector) FuzzReqLen() uint32 {
+	// equal to fixed length
+	return v.fixedLen
+}
+
 func (v *SSZBasicVector) MinLen() uint32 {
 	return v.fixedLen
 }

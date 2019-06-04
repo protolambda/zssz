@@ -19,6 +19,10 @@ type SSZBasic struct {
 	HTR      HashTreeRootFn
 }
 
+func (v *SSZBasic) FuzzReqLen() uint32 {
+	return v.Length
+}
+
 func (v *SSZBasic) FixedLen() uint32 {
 	return v.Length
 }

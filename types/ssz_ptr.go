@@ -29,6 +29,10 @@ func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
 	return &SSZPtr{elemSSZ: elemSSZ, elemSize: elemSize}, nil
 }
 
+func (v *SSZPtr) FuzzReqLen() uint32 {
+	return v.elemSSZ.FuzzReqLen()
+}
+
 func (v *SSZPtr) MinLen() uint32 {
 	return v.elemSSZ.MinLen()
 }

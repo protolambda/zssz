@@ -32,6 +32,10 @@ func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 	return res, nil
 }
 
+func (v *SSZList) FuzzReqLen() uint32 {
+	return 4
+}
+
 func (v *SSZList) MinLen() uint32 {
 	return 0
 }
