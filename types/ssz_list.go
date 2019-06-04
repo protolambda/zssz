@@ -67,7 +67,7 @@ func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		if v.elemSSZ.IsFixed() {
 			return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, p)
 		} else {
-			return DecodeVarSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, p)
+			return DecodeVarSeriesFuzzMode(v.elemSSZ, length, v.elemMemSize, dr, p)
 		}
 	}
 	bytesLen := dr.Max() - dr.Index()

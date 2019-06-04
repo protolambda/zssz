@@ -34,6 +34,11 @@ func (dr *DecodingReader) EnableFuzzMode() {
 	dr.fuzzMode = true
 }
 
+func (dr *DecodingReader) ResetScope(count uint32) {
+	dr.i = 0
+	dr.max = count
+}
+
 func (dr *DecodingReader) UpdateIndexFromScoped(other *DecodingReader) {
 	dr.i += other.i
 }
@@ -59,7 +64,12 @@ func (dr *DecodingReader) Read(p []byte) (n int, err error) {
 		return int(dr.i), fmt.Errorf("cannot read %d bytes, %d beyond scope", len(p), v - dr.max)
 	}
 	dr.i = v
-	return dr.input.Read(p)
+	x, err := dr.input.Read(p)
+	if err != nil {
+		return x, err
+	} else {
+		return x, nil
+	}
 }
 
 func (dr *DecodingReader) ReadByte() (byte, error) {

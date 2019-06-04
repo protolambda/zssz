@@ -84,7 +84,11 @@ func (v *SSZVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	if v.elemSSZ.IsFixed() {
 		return DecodeFixedSeries(v.elemSSZ.Decode, v.length, v.elemMemSize, dr, p)
 	} else {
-		return DecodeVarSeries(v.elemSSZ.Decode, v.length, v.elemMemSize, dr, p)
+		if dr.IsFuzzMode() {
+			return DecodeVarSeriesFuzzMode(v.elemSSZ, v.length, v.elemMemSize, dr, p)
+		} else {
+			return DecodeVarSeries(v.elemSSZ.Decode, v.length, v.elemMemSize, dr, p)
+		}
 	}
 }
 

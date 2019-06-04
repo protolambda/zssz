@@ -17,7 +17,6 @@ func EncodeFixedSeries(encFn EncoderFn, length uint32, elemMemSize uintptr, eb *
 	}
 }
 
-// for dynamic-length series (Go slices), length is the amount of bytes available to read.
 func DecodeFixedSeries(decFn DecoderFn, length uint32, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
 	memOffset := uintptr(0)
 	for i := uint32(0); i < length; i++ {

@@ -106,6 +106,42 @@ func DecodeVarSeries(decFn DecoderFn, length uint32, elemMemSize uintptr, dr *De
 	return decodeVarSeriesFromOffsets(decFn, offsets, elemMemSize, dr, p)
 }
 
+func DecodeVarSeriesFuzzMode(elem SSZ, length uint32, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
+	memOffset := uintptr(0)
+	elemFuzzReqLen := elem.FuzzReqLen()
+	lengthLeftOver := length * elemFuzzReqLen
+
+	span := dr.GetBytesSpan()
+	if span < lengthLeftOver {
+		return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")
+	}
+	available := span - lengthLeftOver
+
+	scoped, err := dr.Scope(available)
+	if err != nil {
+		return err
+	}
+	scoped.EnableFuzzMode()
+
+	for i := uint32(0); i < length; i++ {
+		lengthLeftOver -= elemFuzzReqLen
+		span := dr.GetBytesSpan()
+		if span < lengthLeftOver {
+			return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")
+		}
+		available := span - lengthLeftOver
+		scoped.ResetScope(available)
+
+		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
+		memOffset += elemMemSize
+		if err := elem.Decode(scoped, elemPtr); err != nil {
+			return err
+		}
+		dr.UpdateIndexFromScoped(scoped)
+	}
+	return nil
+}
+
 // pointer must point to the slice header to decode into
 // (new space is allocated for contents and bound to the slice header when necessary)
 func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
