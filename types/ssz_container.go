@@ -135,6 +135,9 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 			if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 				return err
 			}
+			//if scoped.Index() > f.ssz.FuzzReqLen() {
+			//	fmt.Printf("field %d used %d bytes, req was %d\n", fi, scoped.Index(), f.ssz.FuzzReqLen())
+			//}
 			dr.UpdateIndexFromScoped(scoped)
 		}
 	} else {
