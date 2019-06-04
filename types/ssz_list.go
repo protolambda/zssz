@@ -68,10 +68,11 @@ func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		if span != 0 {
 			length = (x % span) / v.elemSSZ.FuzzReqLen()
 		}
+		contentsPtr := ptrutil.AllocateSliceSpaceAndBind(p, length, v.elemMemSize)
 		if v.elemSSZ.IsFixed() {
-			return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, p)
+			return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, contentsPtr)
 		} else {
-			return DecodeVarSeriesFuzzMode(v.elemSSZ, length, v.elemMemSize, dr, p)
+			return DecodeVarSeriesFuzzMode(v.elemSSZ, length, v.elemMemSize, dr, contentsPtr)
 		}
 	}
 	bytesLen := dr.Max() - dr.Index()
