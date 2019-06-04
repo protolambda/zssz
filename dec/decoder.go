@@ -54,7 +54,6 @@ func (dr *DecodingReader) Read(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
-	fmt.Printf("reading %d bytes", uint32(len(p)))
 	v := dr.i + uint32(len(p))
 	if v > dr.max {
 		return int(dr.i), fmt.Errorf("cannot read %d bytes, %d beyond scope", len(p), v - dr.max)
