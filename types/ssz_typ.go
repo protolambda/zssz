@@ -12,7 +12,7 @@ import (
 const BYTES_PER_LENGTH_OFFSET = 4
 
 type SSZ interface {
-	// The minimum length to read the object from fuzzing mode
+	// The minimum length to read the object from fuzzing mode. Must be non-0.
 	FuzzReqLen() uint32
 	// The minimum length of the object
 	MinLen() uint32

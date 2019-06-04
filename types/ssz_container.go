@@ -111,17 +111,6 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	} else if dr.IsFuzzMode() {
 		lengthLeftOver := v.fuzzReqLen
 
-		span := dr.GetBytesSpan()
-		if span < lengthLeftOver {
-			return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")
-		}
-		available := span - lengthLeftOver
-		scoped, err := dr.Scope(available)
-		if err != nil {
-			return err
-		}
-		scoped.EnableFuzzMode()
-
 		for _, f := range v.Fields {
 			lengthLeftOver -= f.ssz.FuzzReqLen()
 			span := dr.GetBytesSpan()
@@ -129,7 +118,13 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 				return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")
 			}
 			available := span - lengthLeftOver
-			scoped.ResetScope(available)
+
+			scoped, err := dr.Scope(available)
+			if err != nil {
+				return err
+			}
+			scoped.EnableFuzzMode()
+
 			// If the container is fixed length, all fields are.
 			// No need to redefine the scope for fixed-length SSZ objects.
 			if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {

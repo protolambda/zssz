@@ -111,18 +111,6 @@ func DecodeVarSeriesFuzzMode(elem SSZ, length uint32, elemMemSize uintptr, dr *D
 	elemFuzzReqLen := elem.FuzzReqLen()
 	lengthLeftOver := length * elemFuzzReqLen
 
-	span := dr.GetBytesSpan()
-	if span < lengthLeftOver {
-		return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")
-	}
-	available := span - lengthLeftOver
-
-	scoped, err := dr.Scope(available)
-	if err != nil {
-		return err
-	}
-	scoped.EnableFuzzMode()
-
 	for i := uint32(0); i < length; i++ {
 		lengthLeftOver -= elemFuzzReqLen
 		span := dr.GetBytesSpan()
@@ -130,7 +118,12 @@ func DecodeVarSeriesFuzzMode(elem SSZ, length uint32, elemMemSize uintptr, dr *D
 			return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")
 		}
 		available := span - lengthLeftOver
-		scoped.ResetScope(available)
+
+		scoped, err := dr.Scope(available)
+		if err != nil {
+			return err
+		}
+		scoped.EnableFuzzMode()
 
 		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
 		memOffset += elemMemSize

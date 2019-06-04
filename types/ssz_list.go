@@ -63,7 +63,11 @@ func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		if err != nil {
 			return err
 		}
-		length := (x % dr.GetBytesSpan()) / v.elemSSZ.FuzzReqLen()
+		span := dr.GetBytesSpan()
+		length := uint32(0)
+		if span != 0 {
+			length = (x % span) / v.elemSSZ.FuzzReqLen()
+		}
 		if v.elemSSZ.IsFixed() {
 			return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, p)
 		} else {

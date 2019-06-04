@@ -73,8 +73,11 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		if err != nil {
 			return err
 		}
-		bytesLen = x % dr.GetBytesSpan()
-		bytesLen -= bytesLen % v.elemSSZ.Length
+		span := dr.GetBytesSpan()
+		if span != 0 {
+			bytesLen = x % span
+			bytesLen -= bytesLen % v.elemSSZ.Length
+		}
 	} else {
 		bytesLen = dr.GetBytesSpan()
 		if bytesLen%v.elemSSZ.Length != 0 {

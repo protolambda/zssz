@@ -52,7 +52,10 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		if err != nil {
 			return err
 		}
-		length = x % dr.GetBytesSpan()
+		span := dr.GetBytesSpan()
+		if span != 0 {
+			length = x % span
+		}
 	} else {
 		length = dr.Max() - dr.Index()
 	}
