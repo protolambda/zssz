@@ -37,6 +37,10 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	return res, nil
 }
 
+func (v *SSZBasicList) MinLen() uint32 {
+	return 0
+}
+
 func (v *SSZBasicList) FixedLen() uint32 {
 	return 0
 }

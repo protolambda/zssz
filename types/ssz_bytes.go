@@ -27,6 +27,10 @@ func (v *SSZBytes) FixedLen() uint32 {
 	return 0
 }
 
+func (v *SSZBytes) MinLen() uint32 {
+	return 0
+}
+
 func (v *SSZBytes) IsFixed() bool {
 	return false
 }

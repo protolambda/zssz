@@ -12,6 +12,8 @@ import (
 const BYTES_PER_LENGTH_OFFSET = 4
 
 type SSZ interface {
+	// The minimum length of the object
+	MinLen() uint32
 	// The length of the fixed-size part
 	FixedLen() uint32
 	// If the type is fixed-size

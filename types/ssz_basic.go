@@ -23,6 +23,10 @@ func (v *SSZBasic) FixedLen() uint32 {
 	return v.Length
 }
 
+func (v *SSZBasic) MinLen() uint32 {
+	return v.Length
+}
+
 func (v *SSZBasic) IsFixed() bool {
 	return true
 }
@@ -60,6 +64,7 @@ var sszBool = &SSZBasic{
 			if dr.IsFuzzMode() {
 				// just make a valid random bool
 				*(*bool)(p) = b & 1 != 0
+				return nil
 			} else {
 				return fmt.Errorf("bool value is invalid")
 			}

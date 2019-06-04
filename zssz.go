@@ -14,6 +14,9 @@ import (
 
 
 func Decode(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) error {
+	if bytesLen < sszTyp.FixedLen() {
+		return fmt.Errorf("expected object length is larger than given bytesLen")
+	}
 	unscoped := NewDecodingReader(r)
 	dr, err := unscoped.Scope(bytesLen)
 	if err != nil {

@@ -22,6 +22,7 @@ type SSZContainer struct {
 	Fields      []ContainerField
 	isFixedLen  bool
 	fixedLen    uint32
+	minLen      uint32
 	offsetCount uint32
 }
 
@@ -42,14 +43,20 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 		}
 		if fieldSSZ.IsFixed() {
 			res.fixedLen += fieldSSZ.FixedLen()
+			res.minLen += fieldSSZ.MinLen()
 		} else {
 			res.fixedLen += BYTES_PER_LENGTH_OFFSET
+			res.minLen += BYTES_PER_LENGTH_OFFSET + fieldSSZ.MinLen()
 			res.offsetCount++
 		}
 		res.Fields = append(res.Fields, ContainerField{memOffset: field.Offset, ssz: fieldSSZ})
 	}
 	res.isFixedLen = res.offsetCount == 0
 	return res, nil
+}
+
+func (v *SSZContainer) MinLen() uint32 {
+	return v.minLen
 }
 
 func (v *SSZContainer) FixedLen() uint32 {
@@ -86,13 +93,31 @@ func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	if v.IsFixed() || dr.IsFuzzMode() {
+	if v.IsFixed() {
 		for _, f := range v.Fields {
 			// If the container is fixed length, all fields are.
 			// No need to redefine the scope for fixed-length SSZ objects.
 			if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 				return err
 			}
+		}
+	} else if dr.IsFuzzMode() {
+		lengthLeftOver := v.minLen
+		for _, f := range v.Fields {
+			lengthLeftOver -= f.ssz.MinLen()
+			span := dr.GetBytesSpan()
+			available := span - lengthLeftOver
+			scoped, err := dr.Scope(available)
+			if err != nil {
+				return err
+			}
+			scoped.EnableFuzzMode()
+			// If the container is fixed length, all fields are.
+			// No need to redefine the scope for fixed-length SSZ objects.
+			if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
+				return err
+			}
+			dr.UpdateIndexFromScoped(scoped)
 		}
 	} else {
 		// technically we could also ignore offset correctness and skip ahead,

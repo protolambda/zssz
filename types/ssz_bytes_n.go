@@ -35,6 +35,11 @@ func (v *SSZBytesN) FixedLen() uint32 {
 	return v.length
 }
 
+func (v *SSZBytesN) MinLen() uint32 {
+	// 1 byte per element, just the same as the length
+	return v.length
+}
+
 func (v *SSZBytesN) IsFixed() bool {
 	return true
 }

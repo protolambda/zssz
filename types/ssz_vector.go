@@ -19,6 +19,7 @@ type SSZVector struct {
 	elemSSZ     SSZ
 	isFixedLen  bool
 	fixedLen    uint32
+	minLen      uint32
 }
 
 func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
@@ -32,18 +33,29 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 	if err != nil {
 		return nil, err
 	}
+	fixedElemLen := uint32(BYTES_PER_LENGTH_OFFSET)
+	minElemLen := elemSSZ.MinLen()
+	if !elemSSZ.IsFixed() {
+		fixedElemLen = elemSSZ.FixedLen()
+		minElemLen += uint32(BYTES_PER_LENGTH_OFFSET)
+	}
 	res := &SSZVector{
 		length:      length,
 		elemMemSize: elemTyp.Size(),
 		elemSSZ:     elemSSZ,
 		isFixedLen:  elemSSZ.IsFixed(),
-		fixedLen:    elemSSZ.FixedLen() * length,
+		fixedLen:    fixedElemLen * length,
+		minLen:      minElemLen * length,
 	}
 	return res, nil
 }
 
 func (v *SSZVector) VectorLength() uint32 {
 	return v.length
+}
+
+func (v *SSZVector) MinLen() uint32 {
+	return v.minLen
 }
 
 func (v *SSZVector) FixedLen() uint32 {
