@@ -107,6 +107,6 @@ func (dr *DecodingReader) GetBytesSpan() uint32 {
 
 // if normal, offsets are used and enforced.
 // if fuzzMode, no offsets are used, and lengths are read from the input, and adjusted to match remaining space.
-func (dr *DecodingReader) IsRelaxed() bool {
+func (dr *DecodingReader) IsFuzzMode() bool {
 	return dr.fuzzMode
 }

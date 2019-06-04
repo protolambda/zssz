@@ -86,7 +86,7 @@ func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	if v.IsFixed() || dr.IsRelaxed() {
+	if v.IsFixed() || dr.IsFuzzMode() {
 		for _, f := range v.Fields {
 			// If the container is fixed length, all fields are.
 			// No need to redefine the scope for fixed-length SSZ objects.

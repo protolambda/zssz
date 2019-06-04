@@ -57,7 +57,12 @@ var sszBool = &SSZBasic{
 			*(*bool)(p) = true
 			return nil
 		} else {
-			return fmt.Errorf("bool value is invalid")
+			if dr.IsFuzzMode() {
+				// just make a valid random bool
+				*(*bool)(p) = b & 1 != 0
+			} else {
+				return fmt.Errorf("bool value is invalid")
+			}
 		}
 	},
 	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {

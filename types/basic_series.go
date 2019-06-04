@@ -24,7 +24,7 @@ func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLe
 		return err
 	}
 	if isBoolElem {
-		if dr.IsRelaxed() {
+		if dr.IsFuzzMode() {
 			// just make it correct where necessary
 			for i := 0; i < len(data); i++ {
 				if data[i] > 1 {

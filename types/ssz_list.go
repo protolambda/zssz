@@ -50,7 +50,7 @@ func (v *SSZList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	if dr.IsRelaxed() {
+	if dr.IsFuzzMode() {
 		x, err := dr.ReadUint32()
 		if err != nil {
 			return err

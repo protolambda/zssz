@@ -39,7 +39,7 @@ func (v *SSZBytes) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 
 func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	var length uint32
-	if dr.IsRelaxed() {
+	if dr.IsFuzzMode() {
 		x, err := dr.ReadUint32()
 		if err != nil {
 			return err

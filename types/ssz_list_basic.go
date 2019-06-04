@@ -60,7 +60,7 @@ func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 
 func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	var bytesLen uint32
-	if dr.IsRelaxed() {
+	if dr.IsFuzzMode() {
 		span, err := dr.ReadUint32()
 		if err != nil {
 			return err
