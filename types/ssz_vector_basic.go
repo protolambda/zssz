@@ -64,7 +64,7 @@ func (v *SSZBasicVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		return LittleEndianBasicSeriesDecode(dr, p, v.fixedLen, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.FixedLen(), v.fixedLen, uintptr(v.elemSSZ.FixedLen()), dr, p)
+		return DecodeFixedSeries(v.elemSSZ.Decoder, v.fixedLen, uintptr(v.elemSSZ.FixedLen()), dr, p)
 	}
 }
 
