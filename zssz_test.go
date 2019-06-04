@@ -74,20 +74,20 @@ var testCases = []struct {
 	// typ getter
 	getTyp getTypFn
 }{
-	{"bool F", false, "00", booltest},
-	{"bool T", true, "01", booltest},
-	{"uint8 00", uint8(0x00), "00", uint8test},
-	{"uint8 ab", uint8(0xab), "ab", uint8test},
-	{"uint16 0000", uint16(0x0000), "0000", uint16test},
-	{"uint16 abcd", uint16(0xabcd), "cdab", uint16test},
-	{"uint32 00000000", uint32(0x00000000), "00000000", uint32test},
-	{"uint32 01234567", uint32(0x01234567), "67452301", uint32test},
-	{"uint64 0000000000000000", uint64(0x00000000), "0000000000000000", uint64test},
-	{"uint64 0123456789abcdef", uint64(0x0123456789abcdef), "efcdab8967452301", uint64test},
-	{"fixedTestStruct", &fixedTestStruct{A: 0xab, B: 0xaabbccdd00112233, C: 0x12345678}, "ab33221100ddccbbaa78563412", fixedTestStructTest},
-	{"varTestStruct nil",  varTestStruct{A: 0xabcd, B: nil, C: 0xff}, "cdab07000000ff", varTestStructTest},
-	{"varTestStruct empty", varTestStruct{A: 0xabcd, B: make([]uint16, 0), C: 0xff}, "cdab07000000ff", varTestStructTest},
-	{"varTestStruct some", varTestStruct{A: 0xabcd, B: []uint16{1, 2, 3}, C: 0xff}, "cdab07000000ff010002000300", varTestStructTest},
+	//{"bool F", false, "00", booltest},
+	//{"bool T", true, "01", booltest},
+	//{"uint8 00", uint8(0x00), "00", uint8test},
+	//{"uint8 ab", uint8(0xab), "ab", uint8test},
+	//{"uint16 0000", uint16(0x0000), "0000", uint16test},
+	//{"uint16 abcd", uint16(0xabcd), "cdab", uint16test},
+	//{"uint32 00000000", uint32(0x00000000), "00000000", uint32test},
+	//{"uint32 01234567", uint32(0x01234567), "67452301", uint32test},
+	//{"uint64 0000000000000000", uint64(0x00000000), "0000000000000000", uint64test},
+	//{"uint64 0123456789abcdef", uint64(0x0123456789abcdef), "efcdab8967452301", uint64test},
+	//{"fixedTestStruct", &fixedTestStruct{A: 0xab, B: 0xaabbccdd00112233, C: 0x12345678}, "ab33221100ddccbbaa78563412", fixedTestStructTest},
+	//{"varTestStruct nil",  varTestStruct{A: 0xabcd, B: nil, C: 0xff}, "cdab07000000ff", varTestStructTest},
+	//{"varTestStruct empty", varTestStruct{A: 0xabcd, B: make([]uint16, 0), C: 0xff}, "cdab07000000ff", varTestStructTest},
+	//{"varTestStruct some", varTestStruct{A: 0xabcd, B: []uint16{1, 2, 3}, C: 0xff}, "cdab07000000ff010002000300", varTestStructTest},
 	{"complexTestStruct", complexTestStruct{
 		A: 0xaabb,
 		B: []uint16{0x1122, 0x3344},
@@ -141,7 +141,7 @@ func TestEncode(t *testing.T) {
 			}
 			data := buf.Bytes()
 			if res := fmt.Sprintf("%x", data); res != tt.hex {
-				t.Errorf("got %s, expected %s", res, tt.hex)
+				t.Errorf("encoded different data:\n     got %s\nexpected %s", res, tt.hex)
 			}
 		})
 	}

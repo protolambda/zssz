@@ -34,11 +34,13 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 	if err != nil {
 		return nil, err
 	}
-	fixedElemLen := uint32(BYTES_PER_LENGTH_OFFSET)
-	minElemLen := elemSSZ.MinLen()
-	if !elemSSZ.IsFixed() {
+	var fixedElemLen, minElemLen uint32
+	if elemSSZ.IsFixed() {
 		fixedElemLen = elemSSZ.FixedLen()
-		minElemLen += uint32(BYTES_PER_LENGTH_OFFSET)
+		minElemLen = elemSSZ.MinLen()
+	} else {
+		fixedElemLen = uint32(BYTES_PER_LENGTH_OFFSET)
+		minElemLen = uint32(BYTES_PER_LENGTH_OFFSET) + elemSSZ.MinLen()
 	}
 	res := &SSZVector{
 		length:      length,
