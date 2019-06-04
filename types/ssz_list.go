@@ -50,6 +50,18 @@ func (v *SSZList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
+	if dr.IsRelaxed() {
+		x, err := dr.ReadUint32()
+		if err != nil {
+			return err
+		}
+		length := (x % dr.GetBytesSpan()) / v.elemSSZ.FixedLen()
+		if v.elemSSZ.IsFixed() {
+			return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, p)
+		} else {
+			return DecodeVarSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, p)
+		}
+	}
 	bytesLen := dr.Max() - dr.Index()
 	if v.elemSSZ.IsFixed() {
 		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.elemMemSize, dr, p)

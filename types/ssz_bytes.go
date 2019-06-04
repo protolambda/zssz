@@ -38,7 +38,16 @@ func (v *SSZBytes) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	length := dr.Max() - dr.Index()
+	var length uint32
+	if dr.IsRelaxed() {
+		x, err := dr.ReadUint32()
+		if err != nil {
+			return err
+		}
+		length = x % dr.GetBytesSpan()
+	} else {
+		length = dr.Max() - dr.Index()
+	}
 	ptrutil.AllocateSliceSpaceAndBind(p, length, 1)
 	data := *(*[]byte)(p)
 	_, err := dr.Read(data)

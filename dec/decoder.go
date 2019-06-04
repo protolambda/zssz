@@ -11,10 +11,11 @@ import (
 type DecoderFn func(dr *DecodingReader, pointer unsafe.Pointer) error
 
 type DecodingReader struct {
-	input io.Reader
-	scratch []byte
-	i uint32
-	max uint32
+	input    io.Reader
+	scratch  []byte
+	i        uint32
+	max      uint32
+	fuzzMode bool
 }
 
 func NewDecodingReader(input io.Reader) *DecodingReader {
@@ -27,6 +28,10 @@ func (dr *DecodingReader) Scope(count uint32) (*DecodingReader, error) {
 		return nil, fmt.Errorf("cannot create scoped decoding reader, scope of %d bytes is bigger than parent scope has available space %d", count, span)
 	}
 	return &DecodingReader{input: io.LimitReader(dr.input, int64(count)), scratch: dr.scratch, i: 0, max: count}, nil
+}
+
+func (dr *DecodingReader) EnableFuzzMode() {
+	dr.fuzzMode = true
 }
 
 func (dr *DecodingReader) UpdateIndexFromScoped(other *DecodingReader) {
@@ -100,7 +105,8 @@ func (dr *DecodingReader) GetBytesSpan() uint32 {
 	return dr.Max() - dr.Index()
 }
 
-// if strict, offsets are used and enforced.
-func (dr *DecodingReader) IsStrict() bool {
-	return false // TODO
+// if normal, offsets are used and enforced.
+// if fuzzMode, no offsets are used, and lengths are read from the input, and adjusted to match remaining space.
+func (dr *DecodingReader) IsRelaxed() bool {
+	return dr.fuzzMode
 }

@@ -28,9 +28,27 @@ func Decode(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) error {
 	if readCount := dr.Index(); readCount != bytesLen {
 		return fmt.Errorf("read total of %d bytes, but expected %d", readCount, bytesLen)
 	}
-	return err
+	return nil
 }
 
+// Returns an error if data could not be decoded (something is wrong with the reader).
+// Second return value is the amount of bytes that were read, to cut the fuzzing input at if necessary.
+func DecodeFuzzBytes(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) (error, uint32) {
+	unscoped := NewDecodingReader(r)
+	dr, err := unscoped.Scope(bytesLen)
+	if err != nil {
+		return err, 0
+	}
+	dr.EnableFuzzMode()
+
+	p := ptrutil.IfacePtrToPtr(&val)
+	if err := sszTyp.Decode(dr, p); err != nil {
+		return err, dr.Index()
+	}
+	// make sure the data of the object is kept around up to this point.
+	runtime.KeepAlive(&val)
+	return nil, dr.Index()
+}
 
 func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	eb := GetPooledBuffer()

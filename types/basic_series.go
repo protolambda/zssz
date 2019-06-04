@@ -24,9 +24,18 @@ func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLe
 		return err
 	}
 	if isBoolElem {
-		for i := 0; i < len(data); i++ {
-			if data[i] > 1 {
-				return fmt.Errorf("byte %d in bool list is not a valid bool value: %d", i, data[i])
+		if dr.IsRelaxed() {
+			// just make it correct where necessary
+			for i := 0; i < len(data); i++ {
+				if data[i] > 1 {
+					data[i] = 1
+				}
+			}
+		} else {
+			for i := 0; i < len(data); i++ {
+				if data[i] > 1 {
+					return fmt.Errorf("byte %d in bool list is not a valid bool value: %d", i, data[i])
+				}
 			}
 		}
 	}

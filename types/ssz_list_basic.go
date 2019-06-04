@@ -59,9 +59,19 @@ func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	bytesLen := dr.Max() - dr.Index()
-	if bytesLen%v.elemSSZ.Length != 0 {
-		return fmt.Errorf("cannot decode basic type array, input has is")
+	var bytesLen uint32
+	if dr.IsRelaxed() {
+		span, err := dr.ReadUint32()
+		if err != nil {
+			return err
+		}
+		bytesLen = span % dr.GetBytesSpan()
+		bytesLen = bytesLen % v.elemSSZ.Length
+	} else {
+		bytesLen = dr.Max() - dr.Index()
+		if bytesLen%v.elemSSZ.Length != 0 {
+			return fmt.Errorf("cannot decode basic type array, input has is")
+		}
 	}
 	elemMemSize := uintptr(v.elemSSZ.Length)
 
