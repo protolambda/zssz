@@ -59,33 +59,42 @@ func (v *SSZList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	if dr.IsFuzzMode() {
-		x, err := dr.ReadUint32()
-		if err != nil {
-			return err
-		}
-		span := dr.GetBytesSpan()
-		length := uint32(0)
-		if span != 0 {
-			length = (x % span) / v.elemSSZ.FuzzReqLen()
-		}
-		if !v.elemSSZ.IsFixed() {
-			length /= 10
-		}
-		contentsPtr := v.alloc(p, length)
-		if v.elemSSZ.IsFixed() {
-			return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, contentsPtr)
-		} else {
-			return DecodeVarSeriesFuzzMode(v.elemSSZ, length, v.elemMemSize, dr, contentsPtr)
-		}
+func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
+	x, err := dr.ReadUint32()
+	if err != nil {
+		return err
 	}
+	span := dr.GetBytesSpan()
+	length := uint32(0)
+	if span != 0 {
+		length = (x % span) / v.elemSSZ.FuzzReqLen()
+	}
+	if !v.elemSSZ.IsFixed() {
+		length /= 10
+	}
+	contentsPtr := v.alloc(p, length)
+	if v.elemSSZ.IsFixed() {
+		return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, contentsPtr)
+	} else {
+		return DecodeVarSeriesFuzzMode(v.elemSSZ, length, v.elemMemSize, dr, contentsPtr)
+	}
+}
+
+func (v *SSZList) decode(dr *DecodingReader, p unsafe.Pointer) error {
 	bytesLen := dr.Max() - dr.Index()
 	if v.elemSSZ.IsFixed() {
 		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.alloc, v.elemMemSize, dr, p)
 	} else {
 		// still pass the fixed length of the element, but just to check a minimum length requirement.
 		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.alloc, v.elemMemSize, dr, p)
+	}
+}
+
+func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
+	if dr.IsFuzzMode() {
+		return v.decodeFuzzmode(dr, p)
+	} else {
+		return v.decode(dr, p)
 	}
 }
 

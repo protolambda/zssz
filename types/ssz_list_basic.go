@@ -68,31 +68,45 @@ func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	var bytesLen uint32
-	if dr.IsFuzzMode() {
-		x, err := dr.ReadUint32()
-		if err != nil {
-			return err
-		}
-		span := dr.GetBytesSpan()
-		if span != 0 {
-			bytesLen = x % span
-			bytesLen -= bytesLen % v.elemSSZ.Length
-		}
-	} else {
-		bytesLen = dr.GetBytesSpan()
-		if bytesLen%v.elemSSZ.Length != 0 {
-			return fmt.Errorf("cannot decode basic type array, input has is")
-		}
+func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
+	x, err := dr.ReadUint32()
+	if err != nil {
+		return err
 	}
-	elemMemSize := uintptr(v.elemSSZ.Length)
+	span := dr.GetBytesSpan()
+	if span == 0 {
+		return nil
+	}
+	bytesLen := x % span
+	bytesLen -= bytesLen % v.elemSSZ.Length
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.alloc, elemMemSize, dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
+	}
+}
+
+func (v *SSZBasicList) decode(dr *DecodingReader, p unsafe.Pointer) error {
+	bytesLen := dr.GetBytesSpan()
+	if bytesLen%v.elemSSZ.Length != 0 {
+		return fmt.Errorf("cannot decode basic type array, input has length %d, not compatible with element length %d", bytesLen, v.elemSSZ.Length)
+	}
+
+	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
+		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
+		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
+	} else {
+		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
+	}
+}
+
+func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
+	if dr.IsFuzzMode() {
+		return v.decodeFuzzmode(dr, p)
+	} else {
+		return v.decode(dr, p)
 	}
 }
 

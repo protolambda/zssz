@@ -101,99 +101,108 @@ func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	}
 }
 
-func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	if v.IsFixed() {
-		for _, f := range v.Fields {
-			// If the container is fixed length, all fields are.
+func (v *SSZContainer) decodeFixedSize(dr *DecodingReader, p unsafe.Pointer) error {
+	for _, f := range v.Fields {
+		// If the container is fixed length, all fields are.
+		// No need to redefine the scope for fixed-length SSZ objects.
+		if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
+	lengthLeftOver := v.fuzzReqLen
+
+	for _, f := range v.Fields {
+		lengthLeftOver -= f.ssz.FuzzReqLen()
+		span := dr.GetBytesSpan()
+		if span < lengthLeftOver {
+			return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")
+		}
+		available := span - lengthLeftOver
+
+		scoped, err := dr.Scope(available)
+		if err != nil {
+			return err
+		}
+		scoped.EnableFuzzMode()
+		if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
+			return err
+		}
+		dr.UpdateIndexFromScoped(scoped)
+	}
+	return nil
+}
+
+
+func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error {
+	// technically we could also ignore offset correctness and skip ahead,
+	//  but we may want to enforce proper offsets.
+	offsets := make([]uint32, 0, v.offsetCount)
+	startIndex := dr.Index()
+	for _, f := range v.Fields {
+		if f.ssz.IsFixed() {
 			// No need to redefine the scope for fixed-length SSZ objects.
 			if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 				return err
 			}
-		}
-	} else if dr.IsFuzzMode() {
-		lengthLeftOver := v.fuzzReqLen
-
-		for _, f := range v.Fields {
-			lengthLeftOver -= f.ssz.FuzzReqLen()
-			span := dr.GetBytesSpan()
-			if span < lengthLeftOver {
-				return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")
-			}
-			available := span - lengthLeftOver
-
-			scoped, err := dr.Scope(available)
+		} else {
+			// write an offset to the fixed data, to find the dynamic data with as a reader
+			offset, err := dr.ReadUint32()
 			if err != nil {
 				return err
 			}
-			scoped.EnableFuzzMode()
-
-			// If the container is fixed length, all fields are.
-			// No need to redefine the scope for fixed-length SSZ objects.
+			offsets = append(offsets, offset)
+		}
+	}
+	pivotIndex := dr.Index()
+	if expectedIndex := v.fixedLen + startIndex; pivotIndex != expectedIndex {
+		return fmt.Errorf("expected to read to %d bytes for fixed part of container, got to %d", expectedIndex, pivotIndex)
+	}
+	var currentOffset uint32
+	i := 0
+	for _, f := range v.Fields {
+		if !f.ssz.IsFixed() {
+			currentOffset = dr.Index()
+			if offsets[i] != currentOffset {
+				return fmt.Errorf("expected to read to %d bytes, got to %d", offsets[i], currentOffset)
+			}
+			// go to next offset
+			i++
+			// calculate the scope based on next offset, and max. value of this scope for the last value
+			var count uint32
+			if i < len(offsets) {
+				if offset := offsets[i]; offset < currentOffset {
+					return fmt.Errorf("offset %d is invalid", i)
+				} else {
+					count = offset - currentOffset
+				}
+			} else {
+				count = dr.Max() - currentOffset
+			}
+			scoped, err := dr.Scope(count)
+			if err != nil {
+				return err
+			}
 			if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 				return err
 			}
-			//if scoped.Index() > f.ssz.FuzzReqLen() {
-			//	fmt.Printf("field %d used %d bytes, req was %d\n", fi, scoped.Index(), f.ssz.FuzzReqLen())
-			//}
 			dr.UpdateIndexFromScoped(scoped)
-		}
-	} else {
-		// technically we could also ignore offset correctness and skip ahead,
-		//  but we may want to enforce proper offsets.
-		offsets := make([]uint32, 0, v.offsetCount)
-		startIndex := dr.Index()
-		for _, f := range v.Fields {
-			if f.ssz.IsFixed() {
-				// No need to redefine the scope for fixed-length SSZ objects.
-				if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
-					return err
-				}
-			} else {
-				// write an offset to the fixed data, to find the dynamic data with as a reader
-				offset, err := dr.ReadUint32()
-				if err != nil {
-					return err
-				}
-				offsets = append(offsets, offset)
-			}
-		}
-		pivotIndex := dr.Index()
-		if expectedIndex := v.fixedLen + startIndex; pivotIndex != expectedIndex {
-			return fmt.Errorf("expected to read to %d bytes, got to %d", expectedIndex, pivotIndex)
-		}
-		var currentOffset uint32
-		i := 0
-		for _, f := range v.Fields {
-			if !f.ssz.IsFixed() {
-				currentOffset = dr.Index()
-				if offsets[i] != currentOffset {
-					return fmt.Errorf("expected to read to %d bytes, got to %d", offsets[i], currentOffset)
-				}
-				// go to next offset
-				i++
-				// calculate the scope based on next offset, and max. value of this scope for the last value
-				var count uint32
-				if i < len(offsets) {
-					if offset := offsets[i]; offset < currentOffset {
-						return fmt.Errorf("offset %d is invalid", i)
-					} else {
-						count = offset - currentOffset
-					}
-				} else {
-					count = dr.Max() - currentOffset
-				}
-				scoped, err := dr.Scope(count)
-				if err != nil {
-					return err
-				}
-				if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
-					return err
-				}
-				dr.UpdateIndexFromScoped(scoped)
-			}
 		}
 	}
 	return nil
+}
+
+func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
+	if v.IsFixed() {
+		return v.decodeFixedSize(dr, p)
+	} else if dr.IsFuzzMode() {
+		return v.decodeVarSizeFuzzmode(dr, p)
+	} else {
+		return v.decodeVarSize(dr, p)
+	}
 }
 
 func (v *SSZContainer) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
