@@ -71,7 +71,7 @@ func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	return err
 }
 
-func HashTreeRoot(h *Hasher, val interface{}, sszTyp SSZ) [32]byte {
+func HashTreeRoot(h HashFn, val interface{}, sszTyp SSZ) [32]byte {
 	p := ptrutil.IfacePtrToPtr(&val)
 	out := sszTyp.HashTreeRoot(h, p)
 	// make sure the data of the object is kept around up to this point.
@@ -79,7 +79,7 @@ func HashTreeRoot(h *Hasher, val interface{}, sszTyp SSZ) [32]byte {
 	return out
 }
 
-func SigningRoot(h *Hasher, val interface{}, sszTyp SignedSSZ) [32]byte {
+func SigningRoot(h HashFn, val interface{}, sszTyp SignedSSZ) [32]byte {
 	p := unsafe.Pointer(&val)
 	return sszTyp.SigningRoot(h, p)
 }

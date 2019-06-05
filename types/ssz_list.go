@@ -98,7 +98,7 @@ func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 }
 
-func (v *SSZList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
+func (v *SSZList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize
 	sh := ptrutil.ReadSliceHeader(p)

@@ -13,8 +13,16 @@ Features:
    - small value passing is preferred over passing slices, avoid memory on the heap. 
 - Construct all encoding/decoding/hashing logic for a type, then run it 10000 times the efficient way
 - No reflection during encoding/decoding/hashing execution of the constructed SSZ-type
+    - Exception: slice allocation uses `reflect.MakeSlice`, but the type is already readily available.
+      This is to avoid the GC collecting allocated space within a slice.
 - Construction of SSZ types can also be used to support encoding of dynamic types
-- No dependencies other thn the standard Go libs.
+- No dependencies other than the standard Go libs.
+    - Zero-hashes are pre-computed with the `sha256` package,
+       but you can supply a more efficient version to run hash-tree-root with. 
+       (E.g. reduce allocations by re-using a single state)
+- Hardened: A work in progress now, but all SSZ rules are strictly yet efficiently enforced.
+- Fuzzmode-decoding: decode arbitrary data into a struct.
+  The length of the input + contents determine the length of dynamic parts.
 
 Supported types
 - small basic-types (`bool`, `uint8`, `uint16`, `uint32`, `uint64`)
@@ -110,19 +118,11 @@ func main() {
 
 	// hash-tree-root
 	// -----------------------
-	// simple wrapper around SHA-256. You can make it re-use its state. (hash.Reset())
-	hashFn := func(input []byte) (out []byte) {
-		hash := sha256.New()
-		hash.Write(input)
-		return hash.Sum(nil)
-	}
-	// re-use a hash function, and change it if you like
-	hasher := htr.NewHasher(hashFn)
 	// get the root
-	root := HashTreeRoot(hasher, &obj, myThingSSZ)
+	root := HashTreeRoot(sha256.Sum256, &obj, myThingSSZ)
 	fmt.Printf("root of my thing: %x\n", root)
 	
-	signingRoot := SigningRoot(hashFn, &obj, myThingSSZ.(SignedSSZ))
+	signingRoot := SigningRoot(sha256.Sum256, &obj, myThingSSZ.(SignedSSZ))
 	fmt.Printf("signing-root of my thing: %x\n", signingRoot)
 }
 ```

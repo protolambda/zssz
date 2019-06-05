@@ -65,7 +65,7 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return err
 }
 
-func (v *SSZBytes) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
+func (v *SSZBytes) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	dataLen := uint32(len(data))

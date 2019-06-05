@@ -110,7 +110,7 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 }
 
-func (v *SSZBasicList) HashTreeRoot(h *Hasher, p unsafe.Pointer) [32]byte {
+func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	//elemSize := v.elemMemSize
 	sh := ptrutil.ReadSliceHeader(p)
 

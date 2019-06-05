@@ -10,13 +10,15 @@ import (
 	"unsafe"
 )
 
+type BasicHtrFn func(pointer unsafe.Pointer) [32]byte
+
 type SSZBasic struct {
 	Length   uint32
 	// 1 << ChunkPow == items of this basic type per chunk
 	ChunkPow uint8
 	Encoder  EncoderFn
 	Decoder  DecoderFn
-	HTR      HashTreeRootFn
+	HTR      BasicHtrFn
 }
 
 func (v *SSZBasic) FuzzReqLen() uint32 {
@@ -43,8 +45,8 @@ func (v *SSZBasic) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return v.Decoder(dr, p)
 }
 
-func (v *SSZBasic) HashTreeRoot(h *Hasher, pointer unsafe.Pointer) [32]byte {
-	return v.HTR(h, pointer)
+func (v *SSZBasic) HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte {
+	return v.HTR(pointer)
 }
 
 var sszBool = &SSZBasic{
@@ -74,10 +76,9 @@ var sszBool = &SSZBasic{
 			}
 		}
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
-		d := [1]byte{}
-		d[0] = *(*byte)(p)
-		return h.Hash(d[:])
+	HTR: func(p unsafe.Pointer) (out [32]byte) {
+		out[0] = *(*byte)(p)
+		return
 	},
 }
 
@@ -95,10 +96,9 @@ var sszUint8 = &SSZBasic{
 		*(*byte)(p) = b
 		return nil
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
-		d := [1]byte{}
-		d[0] = *(*byte)(p)
-		return h.Hash(d[:])
+	HTR: func(p unsafe.Pointer) (out [32]byte) {
+		out[0] = *(*byte)(p)
+		return
 	},
 }
 
@@ -118,10 +118,9 @@ var sszUint16 = &SSZBasic{
 		*(*uint16)(p) = v
 		return nil
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
-		d := [2]byte{}
-		binary.LittleEndian.PutUint16(d[:], *(*uint16)(p))
-		return h.Hash(d[:])
+	HTR: func(p unsafe.Pointer) (out [32]byte) {
+		binary.LittleEndian.PutUint16(out[:], *(*uint16)(p))
+		return
 	},
 }
 
@@ -141,10 +140,9 @@ var sszUint32 = &SSZBasic{
 		*(*uint32)(p) = v
 		return nil
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
-		d := [4]byte{}
-		binary.LittleEndian.PutUint32(d[:], *(*uint32)(p))
-		return h.Hash(d[:])
+	HTR: func(p unsafe.Pointer) (out [32]byte) {
+		binary.LittleEndian.PutUint32(out[:], *(*uint32)(p))
+		return
 	},
 }
 
@@ -164,10 +162,9 @@ var sszUint64 = &SSZBasic{
 		*(*uint64)(p) = v
 		return nil
 	},
-	HTR: func(h *Hasher, p unsafe.Pointer) [32]byte {
-		d := [8]byte{}
-		binary.LittleEndian.PutUint64(d[:], *(*uint64)(p))
-		return h.Hash(d[:])
+	HTR: func(p unsafe.Pointer) (out [32]byte) {
+		binary.LittleEndian.PutUint64(out[:], *(*uint64)(p))
+		return
 	},
 }
 

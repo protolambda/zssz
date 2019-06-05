@@ -1,6 +1,8 @@
 package types
 
-import . "github.com/protolambda/zssz/htr"
+import (
+	. "github.com/protolambda/zssz/htr"
+)
 
 const (
 	mask0 = ^uint32((1 << (1 << iota)) - 1)
@@ -21,6 +23,7 @@ const (
 func GetDepth(v uint32) (out uint8) {
 	// bitmagic: binary search through the uint32,
 	// and set the corresponding index bit (5 bits -> 0x11111 = 31 is max.) in the output.
+	// Example (in out): (0 0), (1 0), (2 1), (3 1), (4 2), (5 2), (6 2), (7 2), (8 3), (9 3)
 	if v&mask4 != 0 {
 		v >>= bit4
 		out |= bit4
@@ -44,7 +47,7 @@ func GetDepth(v uint32) (out uint8) {
 }
 
 // Merkleize with log(N) space allocation
-func Merkleize(hasher *Hasher, count uint32, leaf func(i uint32) []byte) (out [32]byte) {
+func Merkleize(hasher HashFn, count uint32, leaf func(i uint32) []byte) (out [32]byte) {
 	if count == 0 {
 		return
 	}
@@ -52,7 +55,7 @@ func Merkleize(hasher *Hasher, count uint32, leaf func(i uint32) []byte) (out [3
 		copy(out[:], leaf(0))
 		return
 	}
-	depth := GetDepth(count)
+	depth := GetDepth(count) + 1
 	tmp := make([][32]byte, depth+1, depth+1)
 	j := uint8(0)
 	hArr := [32]byte{}
@@ -85,24 +88,21 @@ func Merkleize(hasher *Hasher, count uint32, leaf func(i uint32) []byte) (out [3
 		}
 		// the initial merge in is mixing in work from the right.
 		// Initial work is the zero-hash at height j
-		copy(h, hasher.ZeroHashes[j][:])
+		copy(h, ZeroHashes[j][:])
 		for ; j < depth; j++ {
 			if i&(uint32(1)<<j) == 0 {
 				// left side: combine previous with zero-hash
 				// i.e. venture out to merge back closer to the root
-				v := hasher.Combi(hArr, hasher.ZeroHashes[j])
+				v := hasher.Combi(hArr, ZeroHashes[j])
 				copy(h, v[:])
 			} else {
-				// right side: combine left side with zero hash
+				// right side: combine left side with previous
 				// i.e. merge back with the work
-				v := hasher.Combi(tmp[j], hasher.ZeroHashes[j])
+				v := hasher.Combi(tmp[j], hArr)
 				copy(h, v[:])
 			}
 		}
-		j--
-		// store the merge result (may be no merge, i.e. bottom leaf node)
-		copy(tmp[j][:], h)
+		return hArr
 	}
-	copy(out[:], tmp[j][:])
-	return
+	return tmp[j]
 }

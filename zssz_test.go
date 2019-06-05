@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/protolambda/zssz/htr"
 	. "github.com/protolambda/zssz/types"
 	"reflect"
 	"strings"
@@ -30,6 +29,18 @@ func uint32test() reflect.Type {
 }
 func uint64test() reflect.Type {
 	return reflect.TypeOf(uint64(0))
+}
+
+type smallTestStruct struct {
+	A uint16
+	B uint16
+}
+func smallTestStructTest() reflect.Type {
+	return reflect.TypeOf(new(smallTestStruct)).Elem()
+}
+
+func smallVectorTest() reflect.Type {
+	return reflect.TypeOf(new([4]byte)).Elem()
 }
 
 type fixedTestStruct struct {
@@ -79,10 +90,14 @@ var testCases = []struct {
 	{"bool F", false, "00", booltest},
 	{"bool T", true, "01", booltest},
 	{"uint8 00", uint8(0x00), "00", uint8test},
+	{"uint8 01", uint8(0x01), "01", uint8test},
 	{"uint8 ab", uint8(0xab), "ab", uint8test},
 	{"uint16 0000", uint16(0x0000), "0000", uint16test},
 	{"uint16 abcd", uint16(0xabcd), "cdab", uint16test},
 	{"uint32 00000000", uint32(0x00000000), "00000000", uint32test},
+	{"uint32 01234567", uint32(0x01234567), "67452301", uint32test},
+	{"small {4567, 0123}", smallTestStruct{0x4567, 0x0123}, "67452301", smallTestStructTest},
+	{"small [4567, 0123]::2", [2]uint16{0x4567, 0x0123}, "67452301", smallVectorTest},
 	{"uint32 01234567", uint32(0x01234567), "67452301", uint32test},
 	{"uint64 0000000000000000", uint64(0x00000000), "0000000000000000", uint64test},
 	{"uint64 0123456789abcdef", uint64(0x0123456789abcdef), "efcdab8967452301", uint64test},
@@ -193,6 +208,7 @@ func TestDecode(t *testing.T) {
 func TestHashTreeRoot(t *testing.T) {
 	var buf bytes.Buffer
 
+	// re-use a hash function
 	sha := sha256.New()
 	hashFn := func(input []byte) (out [32]byte) {
 		sha.Reset()
@@ -200,8 +216,6 @@ func TestHashTreeRoot(t *testing.T) {
 		copy(out[:], sha.Sum(nil))
 		return
 	}
-	// re-use a hash function, and change it if you like
-	hasher := htr.NewHasher(hashFn)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -211,7 +225,7 @@ func TestHashTreeRoot(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			root := HashTreeRoot(hasher, tt.value, sszTyp)
+			root := HashTreeRoot(hashFn, tt.value, sszTyp)
 			t.Logf("root: %x\n", root)
 		})
 	}

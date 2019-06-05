@@ -24,11 +24,11 @@ type SSZ interface {
 	Encode(eb *EncodingBuffer, p unsafe.Pointer)
 	// Reads from input, populates object with read data
 	Decode(dr *DecodingReader, p unsafe.Pointer) error
-	HashTreeRoot(h *Hasher, pointer unsafe.Pointer) [32]byte
+	HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte
 }
 
 // SSZ definitions may also provide a way to compute a special hash-tree-root, for self-signed objects.
 type SignedSSZ interface {
 	SSZ
-	SigningRoot(h *Hasher, p unsafe.Pointer) [32]byte
+	SigningRoot(h HashFn, p unsafe.Pointer) [32]byte
 }

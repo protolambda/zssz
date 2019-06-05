@@ -43,18 +43,17 @@ func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLe
 }
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
-func LittleEndianBasicSeriesHTR(h *Hasher, p unsafe.Pointer, length uint32, bytesLen uint32, chunkPow uint8) [32]byte {
+func LittleEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, length uint32, bytesLen uint32, chunkPow uint8) [32]byte {
 	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
-	dataLen := uint32(len(data))
 
 	leaf := func(i uint32) []byte {
 		s := i << chunkPow
 		e := (i + 1) << chunkPow
 		// pad the data
-		if e > dataLen {
+		if e > bytesLen {
 			d := [32]byte{}
-			copy(d[:], data[s:dataLen])
+			copy(d[:], data[s:bytesLen])
 			return d[:]
 		}
 		return data[s:e]
@@ -79,10 +78,9 @@ func BigToLittleEndianChunk(data [32]byte, elemSize uint8) (out [32]byte) {
 }
 
 // counter-part of LittleEndianBasicSeriesHTR
-func BigEndianBasicSeriesHTR(h *Hasher, p unsafe.Pointer, length uint32, bytesLen uint32, chunkPow uint8) [32]byte {
+func BigEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, length uint32, bytesLen uint32, chunkPow uint8) [32]byte {
 	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
-	dataLen := uint32(len(data))
 
 	elemSize := uint8(32) >> chunkPow
 
@@ -90,8 +88,8 @@ func BigEndianBasicSeriesHTR(h *Hasher, p unsafe.Pointer, length uint32, bytesLe
 		s := i << chunkPow
 		e := (i + 1) << chunkPow
 		d := [32]byte{}
-		if e > dataLen {
-			copy(d[:], data[s:dataLen])
+		if e > bytesLen {
+			copy(d[:], data[s:bytesLen])
 		} else {
 			copy(d[:], data[s:e])
 		}
