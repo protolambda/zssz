@@ -137,7 +137,7 @@ func DecodeVarSeriesFuzzMode(elem SSZ, length uint32, elemMemSize uintptr, dr *D
 
 // pointer must point to the slice header to decode into
 // (new space is allocated for contents and bound to the slice header when necessary)
-func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
+func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, alloc ptrutil.SliceAllocationFn, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
 	contentsPtr := p
 
 	// empty series are easy, always nothing to read.
@@ -167,7 +167,7 @@ func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, elemMem
 
 	// We don't want elements to be put in the slice header memory,
 	// instead, we allocate the slice data, and change the contents-pointer in the header.
-	contentsPtr = ptrutil.AllocateSliceSpaceAndBind(p, length, elemMemSize)
+	contentsPtr = alloc(p, length)
 
 	offsets := make([]uint32, 0, length)
 

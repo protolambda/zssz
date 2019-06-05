@@ -12,6 +12,7 @@ import (
 )
 
 type SSZBasicList struct {
+	alloc    ptrutil.SliceAllocationFn
 	elemKind reflect.Kind
 	elemSSZ  *SSZBasic
 }
@@ -31,6 +32,7 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	}
 
 	res := &SSZBasicList{
+		alloc: ptrutil.MakeSliceAllocFn(typ),
 		elemKind: elemKind,
 		elemSSZ:  elemSSZ,
 	}
@@ -87,10 +89,10 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	elemMemSize := uintptr(v.elemSSZ.Length)
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		contentsPtr := ptrutil.AllocateSliceSpaceAndBind(p, bytesLen/v.elemSSZ.Length, elemMemSize)
+		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.FixedLen(), bytesLen, elemMemSize, dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.alloc, elemMemSize, dr, p)
 	}
 }
 

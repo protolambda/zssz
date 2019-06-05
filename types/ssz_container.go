@@ -16,6 +16,8 @@ const OMIT_FLAG = "omit"
 type ContainerField struct {
 	memOffset uintptr
 	ssz       SSZ
+	name      string
+	typ       reflect.Type
 }
 
 type SSZContainer struct {
@@ -52,7 +54,7 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 		}
 		res.fuzzReqLen += fieldSSZ.FuzzReqLen()
 
-		res.Fields = append(res.Fields, ContainerField{memOffset: field.Offset, ssz: fieldSSZ})
+		res.Fields = append(res.Fields, ContainerField{memOffset: field.Offset, ssz: fieldSSZ, name: field.Name, typ: field.Type})
 	}
 	res.isFixedLen = res.offsetCount == 0
 	return res, nil

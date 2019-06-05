@@ -59,7 +59,7 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	} else {
 		length = dr.Max() - dr.Index()
 	}
-	ptrutil.AllocateSliceSpaceAndBind(p, length, 1)
+	ptrutil.BytesAllocFn(p, length)
 	data := *(*[]byte)(p)
 	_, err := dr.Read(data)
 	return err

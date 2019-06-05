@@ -13,7 +13,7 @@ import (
 // proxies SSZ behavior to the SSZ type of the object being pointed to.
 type SSZPtr struct {
 	elemSSZ SSZ
-	elemSize uintptr
+	alloc ptrutil.AllocationFn
 }
 
 func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
@@ -26,7 +26,10 @@ func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &SSZPtr{elemSSZ: elemSSZ, elemSize: elemSize}, nil
+	alloc := func(p unsafe.Pointer) unsafe.Pointer {
+		return ptrutil.AllocateSpace(p, elemSize)
+	}
+	return &SSZPtr{elemSSZ: elemSSZ, alloc: alloc}, nil
 }
 
 func (v *SSZPtr) FuzzReqLen() uint32 {
@@ -51,8 +54,7 @@ func (v *SSZPtr) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZPtr) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	contentsPtr := ptrutil.AllocateSpace(p, v.elemSize)
-	*(*uintptr)(p) = uintptr(contentsPtr)
+	contentsPtr := v.alloc(p)
 	return v.elemSSZ.Decode(dr, contentsPtr)
 }
 

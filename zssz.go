@@ -52,7 +52,7 @@ func DecodeFuzzBytes(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) 
 		return err, dr.Index()
 	}
 	// make sure the data of the object is kept around up to this point.
-	runtime.KeepAlive(&val)
+	runtime.KeepAlive(&p)
 	return nil, dr.Index()
 }
 

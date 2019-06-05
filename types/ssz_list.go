@@ -11,6 +11,7 @@ import (
 )
 
 type SSZList struct {
+	alloc    ptrutil.SliceAllocationFn
 	elemMemSize uintptr
 	elemSSZ     SSZ
 }
@@ -26,6 +27,7 @@ func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 		return nil, err
 	}
 	res := &SSZList{
+		alloc: ptrutil.MakeSliceAllocFn(typ),
 		elemMemSize: elemTyp.Size(),
 		elemSSZ:     elemSSZ,
 	}
@@ -68,7 +70,10 @@ func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		if span != 0 {
 			length = (x % span) / v.elemSSZ.FuzzReqLen()
 		}
-		contentsPtr := ptrutil.AllocateSliceSpaceAndBind(p, length, v.elemMemSize)
+		if !v.elemSSZ.IsFixed() {
+			length /= 10
+		}
+		contentsPtr := v.alloc(p, length)
 		if v.elemSSZ.IsFixed() {
 			return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, contentsPtr)
 		} else {
@@ -77,10 +82,10 @@ func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 	bytesLen := dr.Max() - dr.Index()
 	if v.elemSSZ.IsFixed() {
-		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.elemMemSize, dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.alloc, v.elemMemSize, dr, p)
 	} else {
 		// still pass the fixed length of the element, but just to check a minimum length requirement.
-		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.elemMemSize, dr, p)
+		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.alloc, v.elemMemSize, dr, p)
 	}
 }
 
