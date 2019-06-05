@@ -8,6 +8,7 @@ import (
 	. "github.com/protolambda/zssz/types"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"io"
+	"reflect"
 	"runtime"
 	"unsafe"
 )
@@ -82,4 +83,15 @@ func HashTreeRoot(h HashFn, val interface{}, sszTyp SSZ) [32]byte {
 func SigningRoot(h HashFn, val interface{}, sszTyp SignedSSZ) [32]byte {
 	p := unsafe.Pointer(&val)
 	return sszTyp.SigningRoot(h, p)
+}
+
+// Gets a SSZ type structure for the given Go type.
+// Pass an pointer instance of the type. Can be nil.
+// Example: GetSSZ((*MyStruct)(nil))
+func GetSSZ(ptr interface{}) SSZ {
+	ssz, err := SSZFactory(reflect.TypeOf(ptr).Elem())
+	if err != nil {
+		panic(err)
+	}
+	return ssz
 }

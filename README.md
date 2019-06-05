@@ -61,9 +61,9 @@ import (
 	. "github.com/protolambda/zssz"
 	"reflect"
 	"bytes"
-    "bufio"
-    "fmt"
-    "crypto/sha256"
+	"bufio"
+	"fmt"
+	"crypto/sha256"
 )
 
 type Bar struct {
@@ -79,8 +79,7 @@ type MyThing struct {
 }
 
 func main() {
-	// building a SSZ type definition
-	myThingSSZ, _ := SSZFactory(reflect.TypeOf(new(MyThing)).Elem())
+	myThingSSZ := GetSSZ((*MyThing)(nil))
 
 	// example instance filled with dummy data
 	obj := MyThing{
@@ -100,10 +99,10 @@ func main() {
 	if err := Encode(bufWriter, &obj, myThingSSZ); err != nil {
 		panic(err)
 	}
-    if err := bufWriter.Flush(); err != nil {
+	if err := bufWriter.Flush(); err != nil {
 		panic(err)
-    }
-    data := buf.Bytes()
+	}
+	data := buf.Bytes()
 	fmt.Printf("encoded myThing: %x\n", data)
 
 	// decoding
@@ -133,6 +132,8 @@ ZRNT-SSZ does not check for interfaces on types to do custom SSZ encoding etc., 
 
 Instead, it gives you the freedom to compose your own custom SSZ type-factory,
  the function that is used to compose a `SSZ` structure.
+
+The default factory function is building the structure when calling `GetSSZ((*SomeType)(nil))`
 
 With this, you can remove/change existing functionality, and add your own. 
 Pure composition, without performance degradation 
@@ -173,6 +174,11 @@ func MyFactoryFn(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 		// use the default behavior otherwise
 		return DefaultSSZFactory(factory, typ)
 	}
+}
+
+func main() {
+	// building a SSZ type definition using a factory
+	myThingSSZ, _ := MySSZFactory(reflect.TypeOf((*MyThing)(nil)).Elem())
 }
 ```
 
