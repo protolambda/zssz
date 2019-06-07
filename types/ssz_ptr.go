@@ -60,5 +60,5 @@ func (v *SSZPtr) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 
 func (v *SSZPtr) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	innerPtr := unsafe.Pointer(*(*uintptr)(p))
-	return v.HashTreeRoot(h, innerPtr)
+	return v.elemSSZ.HashTreeRoot(h, innerPtr)
 }
