@@ -13,6 +13,11 @@ import (
 	"testing"
 )
 
+type emptyTestStruct struct {}
+
+type singleFieldTestStruct struct {
+	A byte
+}
 
 type smallTestStruct struct {
 	A uint16
@@ -66,6 +71,8 @@ var testCases = []struct {
 	{"uint32 01234567", uint32(0x01234567), "67452301", getTyp((*uint32)(nil))},
 	{"uint64 0000000000000000", uint64(0x00000000), "0000000000000000", getTyp((*uint64)(nil))},
 	{"uint64 0123456789abcdef", uint64(0x0123456789abcdef), "efcdab8967452301", getTyp((*uint64)(nil))},
+	{"emptyTestStruct", emptyTestStruct{}, "", getTyp((*emptyTestStruct)(nil))},
+	{"singleFieldTestStruct", singleFieldTestStruct{0xab}, "ab", getTyp((*singleFieldTestStruct)(nil))},
 	{"fixedTestStruct", fixedTestStruct{A: 0xab, B: 0xaabbccdd00112233, C: 0x12345678}, "ab33221100ddccbbaa78563412", getTyp((*fixedTestStruct)(nil))},
 	{"varTestStruct nil",  varTestStruct{A: 0xabcd, B: nil, C: 0xff}, "cdab07000000ff", getTyp((*varTestStruct)(nil))},
 	{"varTestStruct empty", varTestStruct{A: 0xabcd, B: make([]uint16, 0), C: 0xff}, "cdab07000000ff", getTyp((*varTestStruct)(nil))},
@@ -116,17 +123,17 @@ func TestEncode(t *testing.T) {
 			buf.Reset()
 			sszTyp, err := SSZFactory(tt.typ)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			if err := Encode(bufWriter, tt.value, sszTyp); err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			if err := bufWriter.Flush(); err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			data := buf.Bytes()
 			if res := fmt.Sprintf("%x", data); res != tt.hex {
-				t.Errorf("encoded different data:\n     got %s\nexpected %s", res, tt.hex)
+				t.Fatalf("encoded different data:\n     got %s\nexpected %s", res, tt.hex)
 			}
 		})
 	}
@@ -140,11 +147,11 @@ func TestDecode(t *testing.T) {
 			buf.Reset()
 			sszTyp, err := SSZFactory(tt.typ)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			data, err := hex.DecodeString(tt.hex)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			buf.Write(data)
 			// For dynamic types, we need to pass the length of the message to the decoder.
@@ -154,19 +161,19 @@ func TestDecode(t *testing.T) {
 			bufReader := bufio.NewReader(&buf)
 			destination := reflect.New(tt.typ).Interface()
 			if err := Decode(bufReader, bytesLen, destination, sszTyp); err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			res, err := json.Marshal(destination)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			expected, err := json.Marshal(tt.value)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			// adjust expected json string. No difference between null and an empty slice.
 			if adjusted := strings.ReplaceAll(string(expected), "null", "[]"); string(res) != adjusted {
-				t.Errorf("decoded different data:\n     got %s\nexpected %s", res, adjusted)
+				t.Fatalf("decoded different data:\n     got %s\nexpected %s", res, adjusted)
 			}
 		})
 	}
@@ -189,10 +196,40 @@ func TestHashTreeRoot(t *testing.T) {
 			buf.Reset()
 			sszTyp, err := SSZFactory(tt.typ)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			root := HashTreeRoot(hashFn, tt.value, sszTyp)
 			t.Logf("root: %x\n", root)
+		})
+	}
+}
+
+func TestSigningRoot(t *testing.T) {
+	var buf bytes.Buffer
+
+	// re-use a hash function
+	sha := sha256.New()
+	hashFn := func(input []byte) (out [32]byte) {
+		sha.Reset()
+		sha.Write(input)
+		copy(out[:], sha.Sum(nil))
+		return
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			buf.Reset()
+			sszTyp, err := SSZFactory(tt.typ)
+			if err != nil {
+				t.Fatal(err)
+			}
+			signedSSZ, ok := sszTyp.(SignedSSZ)
+			if !ok {
+				// only test signing root for applicable types
+				return
+			}
+			root := SigningRoot(hashFn, tt.value, signedSSZ)
+			t.Logf("signing root: %x\n", root)
 		})
 	}
 }

@@ -10,7 +10,6 @@ import (
 	"io"
 	"reflect"
 	"runtime"
-	"unsafe"
 )
 
 
@@ -81,8 +80,11 @@ func HashTreeRoot(h HashFn, val interface{}, sszTyp SSZ) [32]byte {
 }
 
 func SigningRoot(h HashFn, val interface{}, sszTyp SignedSSZ) [32]byte {
-	p := unsafe.Pointer(&val)
-	return sszTyp.SigningRoot(h, p)
+	p := ptrutil.IfacePtrToPtr(&val)
+	out := sszTyp.SigningRoot(h, p)
+	// make sure the data of the object is kept around up to this point.
+	runtime.KeepAlive(&val)
+	return out
 }
 
 // Gets a SSZ type structure for the given Go type.
