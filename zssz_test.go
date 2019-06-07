@@ -140,11 +140,8 @@ func TestEncode(t *testing.T) {
 }
 
 func TestDecode(t *testing.T) {
-	var buf bytes.Buffer
-
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			buf.Reset()
 			sszTyp, err := SSZFactory(tt.typ)
 			if err != nil {
 				t.Fatal(err)
@@ -153,14 +150,13 @@ func TestDecode(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			buf.Write(data)
+			r := bytes.NewReader(data)
 			// For dynamic types, we need to pass the length of the message to the decoder.
 			// See SSZ-envelope discussion
 			bytesLen := uint32(len(tt.hex)) / 2
 
-			bufReader := bufio.NewReader(&buf)
 			destination := reflect.New(tt.typ).Interface()
-			if err := Decode(bufReader, bytesLen, destination, sszTyp); err != nil {
+			if err := Decode(r, bytesLen, destination, sszTyp); err != nil {
 				t.Fatal(err)
 			}
 			res, err := json.Marshal(destination)
@@ -171,8 +167,8 @@ func TestDecode(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			// adjust expected json string. No difference between null and an empty slice.
-			if adjusted := strings.ReplaceAll(string(expected), "null", "[]"); string(res) != adjusted {
+			// adjust expected json string. No effective difference between null and an empty slice. We prefer nil.
+			if adjusted := strings.ReplaceAll(string(expected), "[]", "null"); string(res) != adjusted {
 				t.Fatalf("decoded different data:\n     got %s\nexpected %s", res, adjusted)
 			}
 		})

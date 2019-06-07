@@ -17,7 +17,6 @@ type ContainerField struct {
 	memOffset uintptr
 	ssz       SSZ
 	name      string
-	typ       reflect.Type
 }
 
 type SSZContainer struct {
@@ -54,7 +53,7 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 		}
 		res.fuzzReqLen += fieldSSZ.FuzzReqLen()
 
-		res.Fields = append(res.Fields, ContainerField{memOffset: field.Offset, ssz: fieldSSZ, name: field.Name, typ: field.Type})
+		res.Fields = append(res.Fields, ContainerField{memOffset: field.Offset, ssz: fieldSSZ, name: field.Name})
 	}
 	res.isFixedLen = res.offsetCount == 0
 	return res, nil
@@ -142,19 +141,25 @@ func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error
 	//  but we may want to enforce proper offsets.
 	offsets := make([]uint32, 0, v.offsetCount)
 	startIndex := dr.Index()
+	fixedI := uint32(dr.Index())
 	for _, f := range v.Fields {
 		if f.ssz.IsFixed() {
+			fixedI += f.ssz.FixedLen()
 			// No need to redefine the scope for fixed-length SSZ objects.
 			if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
 				return err
 			}
 		} else {
+			fixedI += BYTES_PER_LENGTH_OFFSET
 			// write an offset to the fixed data, to find the dynamic data with as a reader
 			offset, err := dr.ReadUint32()
 			if err != nil {
 				return err
 			}
 			offsets = append(offsets, offset)
+		}
+		if i := dr.Index(); i != fixedI {
+			return fmt.Errorf("fixed part had different size than expected, now at %d, expected to be at %d", i, fixedI)
 		}
 	}
 	pivotIndex := dr.Index()

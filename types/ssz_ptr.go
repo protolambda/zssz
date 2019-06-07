@@ -21,13 +21,12 @@ func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
 		return nil, fmt.Errorf("typ is not a pointer")
 	}
 	elemTyp := typ.Elem()
-	elemSize := elemTyp.Size()
 	elemSSZ, err := factory(elemTyp)
 	if err != nil {
 		return nil, err
 	}
 	alloc := func(p unsafe.Pointer) unsafe.Pointer {
-		return ptrutil.AllocateSpace(p, elemSize)
+		return ptrutil.AllocateSpace(p, elemTyp)
 	}
 	return &SSZPtr{elemSSZ: elemSSZ, alloc: alloc}, nil
 }

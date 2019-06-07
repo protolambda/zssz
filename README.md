@@ -109,8 +109,9 @@ func main() {
 	// -----------------------
 	dst := MyThing{}
 	bytesLen := uint32(len(data))
+    r := bytes.NewReader(data)
 	// note that Decode takes any io.Reader
-	if err := Decode(&buf, bytesLen, &dst, myThingSSZ); err != nil {
+	if err := Decode(r, bytesLen, &dst, myThingSSZ); err != nil {
 		panic(err)
 	}
 	fmt.Printf("decoded myThing: some data from it: %v\n", dst.Bars[1].DogeImg[:])
