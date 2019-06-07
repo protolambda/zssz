@@ -81,7 +81,7 @@ func Merkleize(hasher HashFn, count uint32, leaf func(i uint32) []byte) (out [32
 		i := count
 		j = 0
 		// walk up to the first right side
-		for ; j < depth; j++ {
+		for ; j <= depth; j++ {
 			if i&(uint32(1)<<j) != 0 {
 				break
 			}

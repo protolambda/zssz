@@ -79,8 +79,8 @@ func (v *SSZBasicVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 
 func (v *SSZBasicVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		return LittleEndianBasicSeriesHTR(h, p, v.length, v.fixedLen, v.elemSSZ.ChunkPow)
+		return LittleEndianBasicSeriesHTR(h, p, v.fixedLen)
 	} else {
-		return BigEndianBasicSeriesHTR(h, p, v.length, v.fixedLen, v.elemSSZ.ChunkPow)
+		return BigEndianBasicSeriesHTR(h, p, v.fixedLen, uint8(v.elemSSZ.Length))
 	}
 }

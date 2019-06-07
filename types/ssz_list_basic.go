@@ -115,8 +115,8 @@ func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		return LittleEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len)*v.elemSSZ.Length, v.elemSSZ.ChunkPow)
+		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len)*v.elemSSZ.Length), uint32(sh.Len))
 	} else {
-		return BigEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len), uint32(sh.Len)*v.elemSSZ.Length, v.elemSSZ.ChunkPow)
+		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len)*v.elemSSZ.Length, uint8(v.elemSSZ.Length)), uint32(sh.Len))
 	}
 }

@@ -71,6 +71,7 @@ var testCases = []struct {
 	{"uint32 01234567", uint32(0x01234567), "67452301", getTyp((*uint32)(nil))},
 	{"uint64 0000000000000000", uint64(0x00000000), "0000000000000000", getTyp((*uint64)(nil))},
 	{"uint64 0123456789abcdef", uint64(0x0123456789abcdef), "efcdab8967452301", getTyp((*uint64)(nil))},
+	{"sig", [96]byte{0: 1, 32: 2, 64: 3, 95: 0xff}, "0100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000ff", getTyp((*[96]byte)(nil))},
 	{"emptyTestStruct", emptyTestStruct{}, "", getTyp((*emptyTestStruct)(nil))},
 	{"singleFieldTestStruct", singleFieldTestStruct{0xab}, "ab", getTyp((*singleFieldTestStruct)(nil))},
 	{"fixedTestStruct", fixedTestStruct{A: 0xab, B: 0xaabbccdd00112233, C: 0x12345678}, "ab33221100ddccbbaa78563412", getTyp((*fixedTestStruct)(nil))},

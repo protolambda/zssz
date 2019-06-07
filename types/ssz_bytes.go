@@ -81,5 +81,5 @@ func (v *SSZBytes) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		}
 		return data[s:e]
 	}
-	return Merkleize(h, leafCount, leaf)
+	return h.MixIn(Merkleize(h, leafCount, leaf), dataLen)
 }

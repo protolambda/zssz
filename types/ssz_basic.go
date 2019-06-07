@@ -14,8 +14,6 @@ type BasicHtrFn func(pointer unsafe.Pointer) [32]byte
 
 type SSZBasic struct {
 	Length   uint32
-	// 1 << ChunkPow == items of this basic type per chunk
-	ChunkPow uint8
 	Encoder  EncoderFn
 	Decoder  DecoderFn
 	HTR      BasicHtrFn
@@ -51,7 +49,6 @@ func (v *SSZBasic) HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte {
 
 var sszBool = &SSZBasic{
 	Length:   1,
-	ChunkPow: 5,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		eb.WriteByte(*(*byte)(p))
 	},
@@ -84,7 +81,6 @@ var sszBool = &SSZBasic{
 
 var sszUint8 = &SSZBasic{
 	Length:   1,
-	ChunkPow: 5,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		eb.WriteByte(*(*byte)(p))
 	},
@@ -104,7 +100,6 @@ var sszUint8 = &SSZBasic{
 
 var sszUint16 = &SSZBasic{
 	Length:   2,
-	ChunkPow: 4,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [2]byte{}
 		binary.LittleEndian.PutUint16(v[:], *(*uint16)(p))
@@ -126,7 +121,6 @@ var sszUint16 = &SSZBasic{
 
 var sszUint32 = &SSZBasic{
 	Length:   4,
-	ChunkPow: 3,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [4]byte{}
 		binary.LittleEndian.PutUint32(v[:], *(*uint32)(p))
@@ -148,7 +142,6 @@ var sszUint32 = &SSZBasic{
 
 var sszUint64 = &SSZBasic{
 	Length:   8,
-	ChunkPow: 2,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [8]byte{}
 		binary.LittleEndian.PutUint64(v[:], *(*uint64)(p))

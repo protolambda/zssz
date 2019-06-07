@@ -16,7 +16,7 @@ func init() {
 	ZeroHashes = make([][32]byte, 32)
 	hash := sha256.New()
 	v := [64]byte{}
-	for i := 1; i < 31; i++ {
+	for i := 0; i < 31; i++ {
 		hash.Reset()
 		copy(v[:32], ZeroHashes[i][:])
 		copy(v[32:], ZeroHashes[i][:])
