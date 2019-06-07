@@ -13,8 +13,9 @@ Features:
    - small value passing is preferred over passing slices, avoid memory on the heap. 
 - Construct all encoding/decoding/hashing logic for a type, then run it 10000 times the efficient way
 - No reflection during encoding/decoding/hashing execution of the constructed SSZ-type
-    - Exception: slice allocation uses `reflect.MakeSlice`, but the type is already readily available.
-      This is to avoid the GC collecting allocated space within a slice.
+    - Exception: slice allocation uses `reflect.MakeSlice`, and pointer-value allocation uses `reflect.New`,
+      but the type is already readily available.
+      This is to avoid the GC collecting allocated space within a slice, and be safe on memory assumptions.
 - Construction of SSZ types can also be used to support encoding of dynamic types
 - No dependencies other than the standard Go libs.
     - Zero-hashes are pre-computed with the `sha256` package,
