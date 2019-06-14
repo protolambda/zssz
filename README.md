@@ -24,6 +24,8 @@ Features:
 - Hardened: A work in progress now, but all SSZ rules are strictly yet efficiently enforced.
 - Fuzzmode-decoding: decode arbitrary data into a struct.
   The length of the input + contents determine the length of dynamic parts.
+- Replaceable hash-function. Initialize the pre-computed zero-hashes with `InitZeroHashes(yourHashFn)`
+  and then call `HashTreeRoot(yourHashFn, val, sszType)`. Zero-hashes default to SHA-256.
 
 Supported types
 - small basic-types (`bool`, `uint8`, `uint16`, `uint32`, `uint64`)

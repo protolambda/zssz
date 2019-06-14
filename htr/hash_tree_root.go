@@ -12,17 +12,19 @@ type HashFn func(input []byte) [32]byte
 
 var ZeroHashes [][32]byte
 
-func init() {
+// initialize the zero-hashes pre-computed data with the given hash-function.
+func InitZeroHashes(hFn HashFn) {
 	ZeroHashes = make([][32]byte, 32)
-	hash := sha256.New()
 	v := [64]byte{}
 	for i := 0; i < 31; i++ {
-		hash.Reset()
 		copy(v[:32], ZeroHashes[i][:])
 		copy(v[32:], ZeroHashes[i][:])
-		hash.Write(v[:])
-		copy(ZeroHashes[i + 1][:], hash.Sum(nil))
+		ZeroHashes[i + 1] = hFn(v[:])
 	}
+}
+
+func init() {
+	InitZeroHashes(sha256.Sum256)
 }
 
 func (h HashFn) Combi(a [32]byte, b [32]byte) [32]byte {
