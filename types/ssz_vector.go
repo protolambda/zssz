@@ -9,10 +9,6 @@ import (
 	"unsafe"
 )
 
-type VectorLength interface {
-	VectorLength() uint32
-}
-
 type SSZVector struct {
 	length      uint32
 	elemMemSize uintptr
@@ -56,10 +52,6 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 
 func (v *SSZVector) FuzzReqLen() uint32 {
 	return v.fuzzReqLen
-}
-
-func (v *SSZVector) VectorLength() uint32 {
-	return v.length
 }
 
 func (v *SSZVector) MinLen() uint32 {

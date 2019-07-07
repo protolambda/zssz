@@ -30,10 +30,6 @@ func (v *SSZBytesN) FuzzReqLen() uint32 {
 	return v.length
 }
 
-func (v *SSZBytesN) VectorLength() uint32 {
-	return v.length
-}
-
 func (v *SSZBytesN) FixedLen() uint32 {
 	// 1 byte per element, just the same as the length
 	return v.length

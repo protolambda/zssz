@@ -2,7 +2,10 @@ package bitfields
 
 import "fmt"
 
-// A bitvector is just a Bitfield without special details.
+// Bitvectors should have a pointer-receiver BitLen function to derive its fixed bit-length from.
+type Bitvector interface {
+	Bitfield
+}
 
 // Helper function to implement Bitvector with.
 // Checks if b can have the given length n in bits.

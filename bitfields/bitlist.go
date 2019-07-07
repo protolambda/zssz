@@ -7,6 +7,7 @@ import (
 
 type Bitlist interface {
 	Bitfield
+	// Limit (in bits) of the Bitlist.
 	lists.List
 }
 
