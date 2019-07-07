@@ -7,8 +7,8 @@ import (
 
 func TestBitvectorCheck(t *testing.T) {
 	cases := []struct {
-		v []byte
-		n uint32
+		v     []byte
+		n     uint32
 		valid bool
 	}{
 		{[]byte{}, 0, true},

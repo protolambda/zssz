@@ -136,7 +136,6 @@ func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointe
 	return nil
 }
 
-
 func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error {
 	// technically we could also ignore offset correctness and skip ahead,
 	//  but we may want to enforce proper offsets.

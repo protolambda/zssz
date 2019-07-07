@@ -12,7 +12,6 @@ import (
 	"runtime"
 )
 
-
 func Decode(r io.Reader, bytesLen uint32, val interface{}, sszTyp SSZ) error {
 	if bytesLen < sszTyp.MinLen() {
 		return fmt.Errorf("expected object length is larger than given bytesLen")

@@ -21,7 +21,7 @@ func BitlistLen(b []byte) uint32 {
 	if byteLen == 0 {
 		return 0
 	}
-	last := b[byteLen - 1]
+	last := b[byteLen-1]
 	return ((byteLen - 1) << 3) | BitIndex(last)
 }
 
@@ -34,7 +34,7 @@ func BitlistCheck(b []byte) error {
 	if len(b) == 0 {
 		return errors.New("bitlist is missing length limit bit")
 	}
-	last := b[len(b) - 1]
+	last := b[len(b)-1]
 	if last == 0 {
 		return errors.New("bitlist is invalid, trailing 0 byte")
 	}

@@ -42,7 +42,6 @@ func (li *uint16List1024) Limit() uint32 {
 	return 1024
 }
 
-
 type bytelist256 []byte
 
 func (li *bytelist256) Limit() uint32 {
@@ -167,7 +166,6 @@ type list128bytes32 [][32]byte
 
 func (_ *list128bytes32) Limit() uint32 { return 128 }
 
-
 func getTyp(ptr interface{}) reflect.Type {
 	return reflect.TypeOf(ptr).Elem()
 }
@@ -189,7 +187,7 @@ type sszTestCase struct {
 var testCases []sszTestCase
 
 func init() {
-	var zeroHashes= []string{chunk("")}
+	var zeroHashes = []string{chunk("")}
 
 	for layer := 1; layer < 32; layer++ {
 		zeroHashes = append(zeroHashes, h(zeroHashes[layer-1], zeroHashes[layer-1]))

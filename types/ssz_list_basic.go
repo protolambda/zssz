@@ -89,7 +89,7 @@ func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) erro
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
-		bytesLimit := v.limit*v.elemSSZ.Length
+		bytesLimit := v.limit * v.elemSSZ.Length
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
 		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
@@ -104,7 +104,7 @@ func (v *SSZBasicList) decode(dr *DecodingReader, p unsafe.Pointer) error {
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
-		bytesLimit := v.limit*v.elemSSZ.Length
+		bytesLimit := v.limit * v.elemSSZ.Length
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
 		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
@@ -122,8 +122,8 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 
-	bytesLen := uint32(sh.Len)*v.elemSSZ.Length
-	bytesLimit := v.limit*v.elemSSZ.Length
+	bytesLen := uint32(sh.Len) * v.elemSSZ.Length
+	bytesLimit := v.limit * v.elemSSZ.Length
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit), uint32(sh.Len))
 	} else {

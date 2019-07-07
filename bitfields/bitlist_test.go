@@ -7,8 +7,8 @@ import (
 
 func TestBitlistLen(t *testing.T) {
 	cases := []struct {
-		v []byte
-		n uint32
+		v     []byte
+		n     uint32
 		valid bool
 	}{
 		{[]byte{0}, 0, false},
@@ -22,11 +22,11 @@ func TestBitlistLen(t *testing.T) {
 		{[]byte{0x1a}, 4, true},
 		{[]byte{0x2b}, 5, true},
 		{[]byte{0xab}, 7, true},
-		{[]byte{0, 0x9b}, 8+7, true},
-		{[]byte{0, 0, 0x9b}, 8+8+7, true},
-		{[]byte{0xff, 0xff, 0x9b}, 8+8+7, true},
-		{[]byte{0xff, 0xff, 0x04}, 8+8+2, true},
-		{[]byte{0, 0, 0, 0, 0, 4}, 5*8+2, true},
+		{[]byte{0, 0x9b}, 8 + 7, true},
+		{[]byte{0, 0, 0x9b}, 8 + 8 + 7, true},
+		{[]byte{0xff, 0xff, 0x9b}, 8 + 8 + 7, true},
+		{[]byte{0xff, 0xff, 0x04}, 8 + 8 + 2, true},
+		{[]byte{0, 0, 0, 0, 0, 4}, 5*8 + 2, true},
 	}
 	for _, testCase := range cases {
 		t.Run(fmt.Sprintf("v %b (bin) len %d", testCase.v, testCase.n), func(t *testing.T) {

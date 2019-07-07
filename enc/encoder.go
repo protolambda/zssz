@@ -10,8 +10,8 @@ import (
 type EncoderFn func(eb *EncodingBuffer, pointer unsafe.Pointer)
 
 type EncodingBuffer struct {
-	buffer bytes.Buffer
-	forward bytes.Buffer
+	buffer       bytes.Buffer
+	forward      bytes.Buffer
 	forwardIndex uint32
 }
 
@@ -60,7 +60,7 @@ func (eb *EncodingBuffer) WriteTo(w io.Writer) (n int64, err error) {
 // Writes an offset, calculated as index(forward) + fixedLen, to the end of the buffer
 func (eb *EncodingBuffer) WriteOffset(fixedLen uint32) {
 	tmp := make([]byte, 4, 4)
-	binary.LittleEndian.PutUint32(tmp, eb.forwardIndex + fixedLen)
+	binary.LittleEndian.PutUint32(tmp, eb.forwardIndex+fixedLen)
 	eb.buffer.Write(tmp)
 }
 
@@ -70,4 +70,3 @@ func (eb *EncodingBuffer) Reset() {
 	eb.forward.Reset()
 	eb.forwardIndex = 0
 }
-

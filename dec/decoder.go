@@ -51,7 +51,7 @@ func (dr *DecodingReader) Max() uint32 {
 func (dr *DecodingReader) checkedIndexUpdate(x uint32) (n int, err error) {
 	v := dr.i + x
 	if v > dr.max {
-		return int(dr.i), fmt.Errorf("cannot read %d bytes, %d beyond scope", x, v - dr.max)
+		return int(dr.i), fmt.Errorf("cannot read %d bytes, %d beyond scope", x, v-dr.max)
 	}
 	dr.i = v
 	return int(x), nil

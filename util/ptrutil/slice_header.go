@@ -13,8 +13,8 @@ type SliceHeader struct {
 func GetSliceHeader(p unsafe.Pointer, length uint32) *SliceHeader {
 	return &SliceHeader{
 		Data: p,
-		Len: int(length),
-		Cap: int(length),
+		Len:  int(length),
+		Cap:  int(length),
 	}
 }
 

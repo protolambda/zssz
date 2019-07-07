@@ -33,15 +33,15 @@ func BitIndex(v byte) (out uint32) {
 // Helper function to implement Bitfields with.
 // Assumes i is a valid bit-index to retrieve a bit from bytes b.
 func GetBit(b []byte, i uint32) bool {
-	return (b[i >> 3] >> (i & 7)) & 1 == 1
+	return (b[i>>3]>>(i&7))&1 == 1
 }
 
 // Helper function to implement Bitfields with.
 // Assumes i is a valid bit-index to set a bit within bytes b.
 func SetBit(b []byte, i uint32, v bool) {
 	if bit := byte(1) << (i & 7); v {
-		b[i >> 3] |= bit
+		b[i>>3] |= bit
 	} else {
-		b[i >> 3] &^= bit
+		b[i>>3] &^= bit
 	}
 }

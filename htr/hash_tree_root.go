@@ -19,7 +19,7 @@ func InitZeroHashes(hFn HashFn) {
 	for i := 0; i < 31; i++ {
 		copy(v[:32], ZeroHashes[i][:])
 		copy(v[32:], ZeroHashes[i][:])
-		ZeroHashes[i + 1] = hFn(v[:])
+		ZeroHashes[i+1] = hFn(v[:])
 	}
 }
 

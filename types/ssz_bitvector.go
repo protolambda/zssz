@@ -13,7 +13,7 @@ import (
 )
 
 type SSZBitvector struct {
-	bitLen uint32
+	bitLen  uint32
 	byteLen uint32
 }
 
@@ -33,7 +33,7 @@ func NewSSZBitvector(typ reflect.Type) (*SSZBitvector, error) {
 	typedNil := reflect.New(ptrTyp).Elem().Interface().(bitfields.Bitvector)
 	bitLen := typedNil.BitLen()
 	byteLen := uint32(typ.Len())
-	if (bitLen + 7) >> 3 != byteLen {
+	if (bitLen+7)>>3 != byteLen {
 		return nil, fmt.Errorf("bitvector type has not the expected %d bytes to cover %d bits", byteLen, bitLen)
 	}
 	res := &SSZBitvector{bitLen: bitLen, byteLen: byteLen}

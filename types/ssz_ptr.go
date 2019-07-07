@@ -13,7 +13,7 @@ import (
 // proxies SSZ behavior to the SSZ type of the object being pointed to.
 type SSZPtr struct {
 	elemSSZ SSZ
-	alloc ptrutil.AllocationFn
+	alloc   ptrutil.AllocationFn
 }
 
 func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
