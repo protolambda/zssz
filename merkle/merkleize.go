@@ -1,4 +1,4 @@
-package types
+package merkle
 
 import (
 	. "github.com/protolambda/zssz/htr"
@@ -103,7 +103,7 @@ func Merkleize(hasher HashFn, count uint32, limit uint32, leaf func(i uint32) []
 	// the next power of two may be smaller than the ultimate virtual size,
 	// complement with zero-hashes at each depth.
 	for j := depth; j < limitDepth; j++ {
-		tmp[j + 1] = hasher.Combi(tmp[j], ZeroHashes[j])
+		tmp[j+1] = hasher.Combi(tmp[j], ZeroHashes[j])
 	}
 
 	return tmp[limitDepth]
