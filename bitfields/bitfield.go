@@ -3,12 +3,23 @@ package bitfields
 // Note: bitfield indices and lengths are generally all uint32, as this is used in SSZ for lengths too.
 
 // General base interface for Bitlists and Bitvectors
-// Note: Bitfields also must be of a byte array or slice kind to work with the SSZ functionality.
+// Note for Bitfields to work with the SSZ functionality:
+//  - Bitlists need to be of kind []byte (packed bits, incl delimiter bit)
+//  - Bitvectors need to be of kind [N]byte (packed bits)
 type Bitfield interface {
-	BitLen() uint32
 	Get(i uint32) bool
 	Set(i uint32, v bool)
+}
+
+// bitfields implementing this can be checked to be of a valid or not. Useful for untrusted bitfields.
+// See BitlistCheck and BitvectorCheck to easily implement the validity checks.
+type CheckedBitfield interface {
 	Check() error
+}
+
+// the exact bitlength can be determined for bitfields implementing this method.
+type SizedBits interface {
+	BitLen() uint32
 }
 
 // Get index of left-most 1 bit.

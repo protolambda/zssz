@@ -3,8 +3,13 @@ package bitfields
 import "fmt"
 
 // Bitvectors should have a pointer-receiver BitLen function to derive its fixed bit-length from.
+type BitvectorMeta interface {
+	SizedBits
+}
+
 type Bitvector interface {
 	Bitfield
+	BitvectorMeta
 }
 
 // Helper function to implement Bitvector with.

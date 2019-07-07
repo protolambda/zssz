@@ -5,10 +5,16 @@ import (
 	"github.com/protolambda/zssz/lists"
 )
 
-type Bitlist interface {
-	Bitfield
+type BitlistMeta interface {
+	// Length (in bits) of the Bitlist.
+	SizedBits
 	// Limit (in bits) of the Bitlist.
 	lists.List
+}
+
+type Bitlist interface {
+	Bitfield
+	BitlistMeta
 }
 
 // Returns the length of the bitlist.
