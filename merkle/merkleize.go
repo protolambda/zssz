@@ -43,12 +43,13 @@ func GetDepth(v uint32) (out uint8) {
 	if v&mask0 != 0 {
 		out |= bit0
 	}
+	out += 1
 	return
 }
 
 // Merkleize with log(N) space allocation
 func Merkleize(hasher HashFn, count uint32, limit uint32, leaf func(i uint32) []byte) (out [32]byte) {
-	if count < limit {
+	if count > limit {
 		panic("merkleizing list that is too large, over limit")
 	}
 	if limit == 0 {
@@ -58,9 +59,9 @@ func Merkleize(hasher HashFn, count uint32, limit uint32, leaf func(i uint32) []
 		copy(out[:], leaf(0))
 		return
 	}
-	depth := GetDepth(count) + 1
+	depth := GetDepth(count)
 	limitDepth := GetDepth(limit)
-	tmp := make([][32]byte, depth+1, depth+1)
+	tmp := make([][32]byte, limitDepth+1, limitDepth+1)
 
 	j := uint8(0)
 	hArr := [32]byte{}
