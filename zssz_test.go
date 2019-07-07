@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/protolambda/zssz/bitfields"
 	. "github.com/protolambda/zssz/types"
 	"reflect"
 	"strings"
@@ -94,6 +95,8 @@ func repeat(v string, count int) (out string) {
 	return
 }
 
+// Many different Bitvector types for testing
+
 type bitvec513 [64 + 1]byte
 
 func (_ *bitvec513) BitLen() uint32 { return 513 }
@@ -122,33 +125,44 @@ type bitvec3 [1]byte
 
 func (_ *bitvec3) BitLen() uint32 { return 3 }
 
+// Many different Bitlist types for testing
+
 type bitlist513 []byte
 
 func (_ *bitlist513) Limit() uint32 { return 513 }
+func (b bitlist513) BitLen() uint32 { return bitfields.BitlistLen(b) }
 
 type bitlist512 []byte
 
 func (_ *bitlist512) Limit() uint32 { return 512 }
+func (b bitlist512) BitLen() uint32 { return bitfields.BitlistLen(b) }
 
 type bitlist16 []byte
 
 func (_ *bitlist16) Limit() uint32 { return 16 }
+func (b bitlist16) BitLen() uint32 { return bitfields.BitlistLen(b) }
 
 type bitlist10 []byte
 
 func (_ *bitlist10) Limit() uint32 { return 10 }
+func (b bitlist10) BitLen() uint32 { return bitfields.BitlistLen(b) }
 
 type bitlist8 []byte
 
 func (_ *bitlist8) Limit() uint32 { return 8 }
+func (b bitlist8) BitLen() uint32 { return bitfields.BitlistLen(b) }
 
 type bitlist4 []byte
 
 func (_ *bitlist4) Limit() uint32 { return 4 }
+func (b bitlist4) BitLen() uint32 { return bitfields.BitlistLen(b) }
 
 type bitlist3 []byte
 
 func (_ *bitlist3) Limit() uint32 { return 3 }
+func (b bitlist3) BitLen() uint32 { return bitfields.BitlistLen(b) }
+
+// Some list types for testing
 
 type list32uint16 []uint16
 
@@ -195,7 +209,7 @@ func init() {
 
 	testCases = []sszTestCase{
 		{"bool F", false, "00", chunk("00"), getTyp((*bool)(nil))},
-		{"bool T", true, "01", chunk("00"), getTyp((*bool)(nil))},
+		{"bool T", true, "01", chunk("01"), getTyp((*bool)(nil))},
 		{"bitvector TTFTFTFF", bitvec8{0x2b}, "2b", chunk("2b"), getTyp((*bitvec8)(nil))},
 		{"bitlist TTFTFTFF", bitlist8{0x2b, 0x01}, "2b01", h(chunk("2b"), chunk("08")), getTyp((*bitlist8)(nil))},
 		{"bitvector FTFT", bitvec4{0x0a}, "0a", chunk("0a"), getTyp((*bitvec4)(nil))},
@@ -482,7 +496,10 @@ func TestHashTreeRoot(t *testing.T) {
 				t.Fatal(err)
 			}
 			root := HashTreeRoot(hashFn, tt.value, sszTyp)
-			t.Logf("root: %x\n", root)
+			res := hex.EncodeToString(root[:])
+			if res != tt.root {
+				t.Errorf("Expected root %s but got %s", tt.root, res)
+			}
 		})
 	}
 }
@@ -512,6 +529,11 @@ func TestSigningRoot(t *testing.T) {
 				return
 			}
 			root := SigningRoot(hashFn, tt.value, signedSSZ)
+			res := hex.EncodeToString(root[:])
+			if res == tt.root {
+				t.Errorf("Signing root is not different than hash-tree-root. " +
+					"Expected root: %s but got %s (should be different)", tt.root, res)
+			}
 			t.Logf("signing root: %x\n", root)
 		})
 	}
