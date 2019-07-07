@@ -17,7 +17,7 @@ type SSZBitvector struct {
 	byteLen uint32
 }
 
-var bitvectorType = reflect.TypeOf((*bitfields.Bitvector)(nil)).Elem()
+var bitvectorMeta = reflect.TypeOf((*bitfields.BitvectorMeta)(nil)).Elem()
 
 func NewSSZBitvector(typ reflect.Type) (*SSZBitvector, error) {
 	if typ.Kind() != reflect.Array {
@@ -27,10 +27,10 @@ func NewSSZBitvector(typ reflect.Type) (*SSZBitvector, error) {
 		return nil, fmt.Errorf("typ is not a bytes array (bitvector requirement)")
 	}
 	ptrTyp := reflect.PtrTo(typ)
-	if !ptrTyp.Implements(bitvectorType) {
+	if !ptrTyp.Implements(bitvectorMeta) {
 		return nil, fmt.Errorf("*typ (pointer type) is not a bitvector")
 	}
-	typedNil := reflect.New(ptrTyp).Elem().Interface().(bitfields.Bitvector)
+	typedNil := reflect.New(ptrTyp).Elem().Interface().(bitfields.BitvectorMeta)
 	bitLen := typedNil.BitLen()
 	byteLen := uint32(typ.Len())
 	if (bitLen+7)>>3 != byteLen {

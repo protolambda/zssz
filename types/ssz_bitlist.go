@@ -17,7 +17,7 @@ type SSZBitlist struct {
 	leafLimit uint32
 }
 
-var bitlistType = reflect.TypeOf((*bitfields.Bitlist)(nil)).Elem()
+var bitlistMeta = reflect.TypeOf((*bitfields.BitlistMeta)(nil)).Elem()
 
 func NewSSZBitlist(typ reflect.Type) (*SSZBitlist, error) {
 	if typ.Kind() != reflect.Slice {
@@ -107,9 +107,12 @@ func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		if e > byteLen {
 			x := [32]byte{}
 			copy(x[:], data[s:byteLen])
-			// find the index of the length-determining 1 bit (bitlist length == index of this bit)
-			chunkBitLen := bitfields.BitlistLen(x[:])
-			bitfields.SetBit(x[:], chunkBitLen, false) // zero out the length bit.
+			if bitLen & 7 != 0 {  // if we not already cut off the delimiting bit with a bytes boundary
+				// find the index of the length-determining 1 bit (bitlist length == index of this bit)
+				last := x[:byteLen & 31]
+				bitLen := bitfields.BitlistLen(last)
+				bitfields.SetBit(last, bitLen, false) // zero out the length bit.
+			}
 			return x[:]
 		}
 		// if the last leaf does not have to be padded,
