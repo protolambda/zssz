@@ -18,7 +18,10 @@ func LittleEndianBasicSeriesEncode(eb *EncodingBuffer, p unsafe.Pointer, bytesLe
 }
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
-func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLen uint32, isBoolElem bool) error {
+func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLen uint32, bytesLimit uint32, isBoolElem bool) error {
+	if bytesLen > bytesLimit {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes", bytesLen, bytesLimit)
+	}
 	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 	if _, err := dr.Read(data); err != nil {

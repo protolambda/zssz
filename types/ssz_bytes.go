@@ -5,12 +5,14 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
 )
 
 type SSZBytes struct {
+	limit uint32
 }
 
 func NewSSZBytes(typ reflect.Type) (*SSZBytes, error) {
@@ -20,7 +22,11 @@ func NewSSZBytes(typ reflect.Type) (*SSZBytes, error) {
 	if typ.Elem().Kind() != reflect.Uint8 {
 		return nil, fmt.Errorf("typ is not a bytes slice")
 	}
-	return &SSZBytes{}, nil
+	limit, err := ReadListLimit(typ)
+	if err != nil {
+		return nil, err
+	}
+	return &SSZBytes{limit: limit}, nil
 }
 
 func (v *SSZBytes) FuzzReqLen() uint32 {
@@ -59,6 +65,9 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	} else {
 		length = dr.Max() - dr.Index()
 	}
+	if length > v.limit {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes", length, v.limit)
+	}
 	ptrutil.BytesAllocFn(p, length)
 	data := *(*[]byte)(p)
 	_, err := dr.Read(data)
@@ -70,6 +79,7 @@ func (v *SSZBytes) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	dataLen := uint32(len(data))
 	leafCount := (dataLen + 31) >> 5
+	leafLimit := (v.limit + 31) >> 5
 	leaf := func(i uint32) []byte {
 		s := i << 5
 		e := (i + 1) << 5
@@ -81,5 +91,5 @@ func (v *SSZBytes) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		}
 		return data[s:e]
 	}
-	return h.MixIn(Merkleize(h, leafCount, leaf), dataLen)
+	return h.MixIn(merkle.Merkleize(h, leafCount, leafLimit, leaf), dataLen)
 }

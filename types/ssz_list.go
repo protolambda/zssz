@@ -91,10 +91,10 @@ func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZList) decode(dr *DecodingReader, p unsafe.Pointer) error {
 	bytesLen := dr.Max() - dr.Index()
 	if v.elemSSZ.IsFixed() {
-		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.alloc, v.elemMemSize, dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.limit, v.alloc, v.elemMemSize, dr, p)
 	} else {
 		// still pass the fixed length of the element, but just to check a minimum length requirement.
-		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.alloc, v.elemMemSize, dr, p)
+		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.limit, v.alloc, v.elemMemSize, dr, p)
 	}
 }
 

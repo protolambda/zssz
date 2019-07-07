@@ -30,7 +30,7 @@ func NewSSZBitlist(typ reflect.Type) (*SSZBitlist, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := &SSZBitlist{bitLimit: bitLimit, leafLimit: (((bitLimit + 255) >> 8) + 31) >> 5}
+	res := &SSZBitlist{bitLimit: bitLimit, leafLimit: (((bitLimit + 7) >> 3) + 31) >> 5}
 	return res, nil
 }
 
@@ -76,6 +76,10 @@ func (v *SSZBitlist) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		byteLen += 1
 	} else {
 		byteLen = dr.Max() - dr.Index()
+	}
+	// there may not be more bytes than necessary for the N bits, +1 for the delimiting bit.
+	if byteLimit := ((v.bitLimit + 1) + 7) >> 3; byteLen > byteLimit {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes to represent bitlist", byteLen, byteLimit)
 	}
 	ptrutil.BytesAllocFn(p, byteLen)
 	data := *(*[]byte)(p)

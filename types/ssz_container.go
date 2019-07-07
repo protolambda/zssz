@@ -5,6 +5,7 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/tags"
 	"reflect"
 	"unsafe"
@@ -216,7 +217,8 @@ func (v *SSZContainer) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		r := f.ssz.HashTreeRoot(h, unsafe.Pointer(uintptr(p)+f.memOffset))
 		return r[:]
 	}
-	return Merkleize(h, uint32(len(v.Fields)), leaf)
+	leafCount := uint32(len(v.Fields))
+	return merkle.Merkleize(h, leafCount, leafCount, leaf)
 }
 
 func (v *SSZContainer) SigningRoot(h HashFn, p unsafe.Pointer) [32]byte {
@@ -230,5 +232,5 @@ func (v *SSZContainer) SigningRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	if leafCount != 0 {
 		leafCount--
 	}
-	return Merkleize(h, leafCount, leaf)
+	return merkle.Merkleize(h, leafCount, leafCount, leaf)
 }

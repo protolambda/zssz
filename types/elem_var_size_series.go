@@ -137,7 +137,9 @@ func DecodeVarSeriesFuzzMode(elem SSZ, length uint32, elemMemSize uintptr, dr *D
 
 // pointer must point to the slice header to decode into
 // (new space is allocated for contents and bound to the slice header when necessary)
-func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, alloc ptrutil.SliceAllocationFn, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
+func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, limit uint32,
+	alloc ptrutil.SliceAllocationFn, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
+
 	contentsPtr := p
 
 	// empty series are easy, always nothing to read.
@@ -160,6 +162,10 @@ func DecodeVarSlice(decFn DecoderFn, minElemLen uint32, bytesLen uint32, alloc p
 	}
 
 	length := firstOffset / BYTES_PER_LENGTH_OFFSET
+
+	if length > limit {
+		return fmt.Errorf("got %d elements, expected no more than %d elements", length, limit)
+	}
 
 	if maxLen, minLen := uint64(dr.Max()), uint64(minElemLen)*uint64(length); minLen > maxLen {
 		return fmt.Errorf("cannot fit %d elements of each a minimum size %d (%d total bytes) in %d bytes", length, minElemLen, minLen, maxLen)

@@ -89,9 +89,10 @@ func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) erro
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
-		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
+		bytesLimit := v.limit*v.elemSSZ.Length
+		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
 	}
 }
 
@@ -103,9 +104,10 @@ func (v *SSZBasicList) decode(dr *DecodingReader, p unsafe.Pointer) error {
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
-		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
+		bytesLimit := v.limit*v.elemSSZ.Length
+		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
 	}
 }
 
