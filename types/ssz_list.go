@@ -5,21 +5,28 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
 )
 
 type SSZList struct {
-	alloc    ptrutil.SliceAllocationFn
+	alloc       ptrutil.SliceAllocationFn
 	elemMemSize uintptr
 	elemSSZ     SSZ
+	limit       uint32
 }
 
 func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 	if typ.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("typ is not a dynamic-length array")
 	}
+	limit, err := ReadListLimit(typ)
+	if err != nil {
+		return nil, err
+	}
+
 	elemTyp := typ.Elem()
 
 	elemSSZ, err := factory(elemTyp)
@@ -27,9 +34,10 @@ func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 		return nil, err
 	}
 	res := &SSZList{
-		alloc: ptrutil.MakeSliceAllocFn(typ),
+		alloc:       ptrutil.MakeSliceAllocFn(typ),
 		elemMemSize: elemTyp.Size(),
 		elemSSZ:     elemSSZ,
+		limit:       limit,
 	}
 	return res, nil
 }
@@ -106,5 +114,5 @@ func (v *SSZList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		r := elemHtr(h, unsafe.Pointer(uintptr(sh.Data)+(elemSize*uintptr(i))))
 		return r[:]
 	}
-	return h.MixIn(Merkleize(h, uint32(sh.Len), leaf), uint32(sh.Len))
+	return h.MixIn(merkle.Merkleize(h, uint32(sh.Len), v.limit, leaf), uint32(sh.Len))
 }

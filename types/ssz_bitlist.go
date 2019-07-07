@@ -6,13 +6,15 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
 )
 
 type SSZBitlist struct {
-	bitLimit uint32
+	bitLimit  uint32
+	leafLimit uint32
 }
 
 var bitlistType = reflect.TypeOf((*bitfields.Bitlist)(nil)).Elem()
@@ -24,13 +26,11 @@ func NewSSZBitlist(typ reflect.Type) (*SSZBitlist, error) {
 	if typ.Elem().Kind() != reflect.Uint8 {
 		return nil, fmt.Errorf("typ is not a bytes slice (bitlist requirement)")
 	}
-	ptrTyp := reflect.PtrTo(typ)
-	if !ptrTyp.Implements(bitlistType) {
-		return nil, fmt.Errorf("*typ (pointer type) is not a bitlist")
+	bitLimit, err := ReadListLimit(typ)
+	if err != nil {
+		return nil, err
 	}
-	typedNil := reflect.New(ptrTyp).Elem().Interface().(bitfields.Bitlist)
-	bitLimit := typedNil.Limit()
-	res := &SSZBitlist{bitLimit: bitLimit}
+	res := &SSZBitlist{bitLimit: bitLimit, leafLimit: (((bitLimit + 255) >> 8) + 31) >> 5}
 	return res, nil
 }
 
@@ -105,7 +105,7 @@ func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 			copy(x[:], data[s:byteLen])
 			// find the index of the length-determining 1 bit (bitlist length == index of this bit)
 			chunkBitLen := bitfields.BitlistLen(x[:])
-			bitfields.SetBit(x[:], chunkBitLen, false)  // zero out the length bit.
+			bitfields.SetBit(x[:], chunkBitLen, false) // zero out the length bit.
 			return x[:]
 		}
 		// if the last leaf does not have to be padded,
@@ -113,5 +113,5 @@ func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		// i.e. as sole bit in next (ignored) chunk of data.
 		return data[s:e]
 	}
-	return h.MixIn(Merkleize(h, leafCount, leaf), bitLen)
+	return h.MixIn(merkle.Merkleize(h, leafCount, v.leafLimit, leaf), bitLen)
 }

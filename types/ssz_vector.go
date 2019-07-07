@@ -5,6 +5,7 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"reflect"
 	"unsafe"
 )
@@ -93,5 +94,5 @@ func (v *SSZVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		v := elemHtr(h, unsafe.Pointer(uintptr(p)+(elemSize*uintptr(i))))
 		return v[:]
 	}
-	return Merkleize(h, v.length, leaf)
+	return merkle.Merkleize(h, v.length, v.length, leaf)
 }

@@ -15,12 +15,18 @@ type SSZBasicList struct {
 	alloc    ptrutil.SliceAllocationFn
 	elemKind reflect.Kind
 	elemSSZ  *SSZBasic
+	limit    uint32
 }
 
 func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	if typ.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("typ is not a dynamic-length array")
 	}
+	limit, err := ReadListLimit(typ)
+	if err != nil {
+		return nil, err
+	}
+
 	elemTyp := typ.Elem()
 	elemKind := elemTyp.Kind()
 	elemSSZ, err := GetBasicSSZElemType(elemKind)
@@ -32,9 +38,10 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	}
 
 	res := &SSZBasicList{
-		alloc: ptrutil.MakeSliceAllocFn(typ),
+		alloc:    ptrutil.MakeSliceAllocFn(typ),
 		elemKind: elemKind,
 		elemSSZ:  elemSSZ,
+		limit:    limit,
 	}
 	return res, nil
 }
@@ -111,12 +118,13 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 }
 
 func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
-	//elemSize := v.elemMemSize
 	sh := ptrutil.ReadSliceHeader(p)
 
+	bytesLen := uint32(sh.Len)*v.elemSSZ.Length
+	bytesLimit := v.limit*v.elemSSZ.Length
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len)*v.elemSSZ.Length), uint32(sh.Len))
+		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit), uint32(sh.Len))
 	} else {
-		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len)*v.elemSSZ.Length, uint8(v.elemSSZ.Length)), uint32(sh.Len))
+		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit, uint8(v.elemSSZ.Length)), uint32(sh.Len))
 	}
 }
