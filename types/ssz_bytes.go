@@ -75,9 +75,9 @@ func (v *SSZBytes) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		e := (i + 1) << 5
 		// pad the data
 		if e > dataLen {
-			v := [32]byte{}
-			copy(v[:], data[s:dataLen])
-			return v[:]
+			x := [32]byte{}
+			copy(x[:], data[s:dataLen])
+			return x[:]
 		}
 		return data[s:e]
 	}

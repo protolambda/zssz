@@ -60,16 +60,15 @@ func (v *SSZBytesN) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZBytesN) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.GetSliceHeader(p, v.length)
 	data := *(*[]byte)(unsafe.Pointer(sh))
-	dataLen := uint32(len(data))
-	leafCount := (dataLen + 31) >> 5
+	leafCount := (v.length + 31) >> 5
 	leaf := func(i uint32) []byte {
 		s := i << 5
 		e := (i + 1) << 5
 		// pad the data
-		if e > dataLen {
-			v := [32]byte{}
-			copy(v[:], data[s:dataLen])
-			return v[:]
+		if e > v.length {
+			x := [32]byte{}
+			copy(x[:], data[s:v.length])
+			return x[:]
 		}
 		return data[s:e]
 	}
