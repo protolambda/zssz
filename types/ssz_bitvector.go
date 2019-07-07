@@ -20,10 +20,10 @@ var bitvectorType = reflect.TypeOf((*bitfields.Bitvector)(nil)).Elem()
 
 func NewSSZBitvector(typ reflect.Type) (*SSZBitvector, error) {
 	if typ.Kind() != reflect.Array {
-		return nil, fmt.Errorf("typ is not a fixed-length bytes array")
+		return nil, fmt.Errorf("typ is not a fixed-length bytes array (bitvector requirement)")
 	}
 	if typ.Elem().Kind() != reflect.Uint8 {
-		return nil, fmt.Errorf("typ is not a bytes array")
+		return nil, fmt.Errorf("typ is not a bytes array (bitvector requirement)")
 	}
 	ptrTyp := reflect.PtrTo(typ)
 	if !ptrTyp.Implements(bitvectorType) {
@@ -51,7 +51,6 @@ func (v *SSZBitvector) FixedLen() uint32 {
 
 // in bytes (rounded up), not bits
 func (v *SSZBitvector) MinLen() uint32 {
-	// 1 byte per element, just the same as the length
 	return v.byteLen
 }
 

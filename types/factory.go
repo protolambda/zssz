@@ -31,7 +31,11 @@ func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 	case reflect.Array:
 		switch typ.Elem().Kind() {
 		case reflect.Uint8:
-			return NewSSZBytesN(typ)
+			if typ.Implements(bitvectorType) {
+				return NewSSZBitvector(typ)
+			} else {
+				return NewSSZBytesN(typ)
+			}
 		case reflect.Bool, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			return NewSSZBasicVector(typ)
 		default:
@@ -40,7 +44,11 @@ func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 	case reflect.Slice:
 		switch typ.Elem().Kind() {
 		case reflect.Uint8:
-			return NewSSZBytes(typ)
+			if typ.Implements(bitlistType) {
+				return NewSSZBitlist(typ)
+			} else {
+				return NewSSZBytes(typ)
+			}
 		case reflect.Bool, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 			return NewSSZBasicList(typ)
 		default:
