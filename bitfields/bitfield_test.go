@@ -134,3 +134,49 @@ func TestSetBit(t *testing.T) {
 		})
 	}
 }
+
+func TestIsZeroBitlist(t *testing.T) {
+	cases := []struct {
+		v      []byte
+		isZero bool
+	}{
+		{[]byte{0}, true},
+		{[]byte{1}, true},
+		{[]byte{2}, true},
+		{[]byte{3}, false},
+		{[]byte{5}, false},
+		{[]byte{8}, true},
+		{[]byte{0x80}, true},
+		{[]byte{0x81}, false},
+		{[]byte{0x90}, false},
+		{[]byte{0, 0}, true},
+		{[]byte{0, 1}, true},
+		{[]byte{0, 2}, true},
+		{[]byte{2, 2}, false},
+		{[]byte{0, 3}, false},
+		{[]byte{0, 5}, false},
+		{[]byte{0, 8}, true},
+		{[]byte{0, 0x80}, true},
+		{[]byte{3, 0x80}, false},
+		{[]byte{0, 0x81}, false},
+		{[]byte{0, 0x90}, false},
+		{[]byte{0, 0, 0}, true},
+		{[]byte{0, 0, 1}, true},
+		{[]byte{0, 0, 2}, true},
+		{[]byte{0, 0, 3}, false},
+		{[]byte{0, 0, 5}, false},
+		{[]byte{0, 0, 8}, true},
+		{[]byte{0, 0, 0x80}, true},
+		{[]byte{0, 0, 0x81}, false},
+		{[]byte{0, 0, 0x90}, false},
+		{[]byte{3, 0, 0x80}, false},
+	}
+	for _, testCase := range cases {
+		t.Run(fmt.Sprintf("is-zero checking %b (bin)", testCase.v), func(t *testing.T) {
+			if res := IsZeroBitlist(testCase.v); res != testCase.isZero {
+				t.Errorf("unexpected is-zero result for %b (bin). Expected: %v, got: %v",
+					testCase.v, testCase.isZero, res)
+			}
+		})
+	}
+}

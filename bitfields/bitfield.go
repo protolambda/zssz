@@ -56,3 +56,28 @@ func SetBit(b []byte, i uint32, v bool) {
 		b[i>>3] &^= bit
 	}
 }
+
+// Checks if the bitList is fully zeroed (except the leading bit)
+func IsZeroBitlist(b []byte) bool {
+	end := len(b)
+	if end == 0 {
+		return true
+	}
+	end -= 1
+	if end > 0 {
+		// bytes up to the end byte can be checked efficiently. No need for bit-magic.
+		for i := 0; i < end; i++ {
+			if b[i] != 0 {
+				return false
+			}
+		}
+	}
+	last := b[end]
+	if last == 0 {
+		// invalid bitlist, but reasonably zero
+		return true
+	}
+	// now check the last bit, but ignore the delimiter 1 bit.
+	last ^= byte(1) << BitIndex(last)
+	return last == 0
+}
