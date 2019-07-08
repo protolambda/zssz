@@ -16,6 +16,8 @@ Features:
     - Exception: slice allocation uses `reflect.MakeSlice`, and pointer-value allocation uses `reflect.New`,
       but the type is already readily available.
       This is to avoid the GC collecting allocated space within a slice, and be safe on memory assumptions.
+- Bitfields/Bitlists are compatible with byte arrays, and not unpacked into boolean arrays.
+- Stable merkleization, using the v0.8 limit-based merkleization depth for lists.
 - Construction of SSZ types can also be used to support encoding of dynamic types
 - No dependencies other than the standard Go libs.
     - Zero-hashes are pre-computed with the `sha256` package,
@@ -34,12 +36,14 @@ Supported types
   - incl. optimizations for fixed-size only elements
 - vector
   - `Vector`, optimized for fixed and variable size elements
-  - `BytesN`, optimized for bytes (fixed length)
   - `BasicVector`, optimized for basic element types
+  - `BytesN`, optimized for bytes vector (fixed length)
+  - `Bitvector`, bits packed in a byte array.
 - list
   - `List` optimized for fixed and variable size elements
-  - `Bytes`, optimized for bytes (dynamic length)
   - `BasicList`, optimized for basic element types
+  - `Bytes`, optimized for bytes list (dynamic length)
+  - `Bitlist`, bits packed in a byte slice, with bit delimiter to determine length.
 
 Possibly supported in future:
 - union/null
@@ -129,6 +133,109 @@ func main() {
 	fmt.Printf("signing-root of my thing: %x\n", signingRoot)
 }
 ```
+
+## Format
+
+### Basic types
+
+SSZ basic types match the Go types, with the exception of `uint128` and `uint256`, which are not supported.
+As a replacement, these can be declared as `[16]byte` and `[32]byte`, and will encode/decode/hash the same.
+
+### Lists
+
+Lists types are required to define a limit.
+For sanity in an adversarial environment, and stable merkleization.
+
+Since Go does not support parametrizing types, meta-classes, or any static class functionality,
+this is slightly non-standard: by defining a pointer-receiver method on the type,
+we can return the (static) limit information, even if the pointer itself is nil.
+This enables ZSSZ to derive the data from a typed nil-pointer.
+
+This pattern also enables to deal with the list like any other slice,
+ and not create custom constructor/parsers/serializers for it elsewhere.
+
+Example:
+```go
+type MyList []Something
+
+func (_ *MyList) Limit() uint32 {
+	return 256
+}
+
+type SomeBytes []byte
+
+func (_ *SomeBytes) Limit() uint32 {
+	return 1024
+}
+
+type RootList [][32]byte
+
+func (_ *RootList) Limit() uint32 {
+	return 1 << 13
+}
+```
+
+### Containers
+
+Containers are just structs. Fields can be omitted by adding `ssz:"omit"` as struct-field tag.
+
+```go
+type MyContainer struct {
+	Foo uint64
+	Cache NonSSZThing `ssz:"omit"`
+	Bar OtherContainer
+	Abc MyList
+}
+```
+
+### Bitfields
+
+Series of bools are too inefficient, hence SSZ defines a way to pack bools in a bitfield.
+This memory structure is simple and easily implemented in Go, hence the choice to not unpack into a bool array.
+This preserves all compatibility with byte arrays, which is nice for debugging, 
+ and using other serialization formats without any special encoders or wrappers.
+
+The `bitfiels` package contains interfaces and helper methods to implement the essential
+ bitfield functionality in your own bitvector/bitlist types.
+
+#### Bitvectors
+
+Bitvectors are defined as byte vectors, tagged with some extra information (a `BitLen() uint32` function).
+
+Example:
+
+```go
+type Bitvec4 [1]byte
+
+func (_ *Bitvec4) BitLen() uint32 { return 4 }
+
+const MY_LARGE_BITVECTOR_SIZE = 10000
+
+type LargeBitfield [(MY_LARGE_BITVECTOR_SIZE + 7) / 8]byte
+
+func (_ *LargeBitfield) BitLen() uint32 { return MY_LARGE_BITVECTOR_SIZE }
+```
+
+#### Bitlists
+
+Bitlists are like bitvectors, but based off of byte slices instead.
+Bitlists are dynamic in size, and hence need a limit, like any other list type.
+To determine the length in bits, the last byte of a bitlist has a trailing (high end of byte) `1` bit 
+that functions as delimiter. There is an utility function to read it.
+
+Example:
+
+```go
+type bitlist16 []byte
+
+func (_ *bitlist16) Limit() uint32 { return 16 }
+func (b bitlist16) BitLen() uint32 { return bitfields.BitlistLen(b) }
+```
+
+### Union
+
+Not yet supported. Suggestions for Go-style are welcome.
+
 
 ## Extending
 
