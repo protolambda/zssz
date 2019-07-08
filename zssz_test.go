@@ -46,7 +46,7 @@ func (li *uint16List1024) Limit() uint32 {
 type bytelist256 []byte
 
 func (li *bytelist256) Limit() uint32 {
-	return 8
+	return 256
 }
 
 type varTestStruct struct {
@@ -285,7 +285,7 @@ func init() {
 		},
 		{"bytes32 list long", list128bytes32{
 			{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10},
-			{11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20},
+			{11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19},
 		},
 			"01" + repeat("00", 31) + "02" + repeat("00", 31) +
 				"03" + repeat("00", 31) + "04" + repeat("00", 31) +
@@ -296,7 +296,7 @@ func init() {
 				"0d" + repeat("00", 31) + "0e" + repeat("00", 31) +
 				"0f" + repeat("00", 31) + "10" + repeat("00", 31) +
 				"11" + repeat("00", 31) + "12" + repeat("00", 31) +
-				"13" + repeat("00", 31) + "14" + repeat("00", 31),
+				"13" + repeat("00", 31),
 			h(merge(
 				h(
 					h(
@@ -530,8 +530,8 @@ func TestSigningRoot(t *testing.T) {
 			}
 			root := SigningRoot(hashFn, tt.value, signedSSZ)
 			res := hex.EncodeToString(root[:])
-			if res == tt.root {
-				t.Errorf("Signing root is not different than hash-tree-root. " +
+			if res == tt.root && root != ([32]byte{}) {
+				t.Errorf("Signing root is not different than hash-tree-root. "+
 					"Expected root: %s but got %s (should be different)", tt.root, res)
 			}
 			t.Logf("signing root: %x\n", root)
