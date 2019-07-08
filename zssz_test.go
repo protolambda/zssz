@@ -263,7 +263,7 @@ func init() {
 		{"uint64 0123456789abcdef", uint64(0x0123456789abcdef), "efcdab8967452301", chunk("efcdab8967452301"), getTyp((*uint64)(nil))},
 		{"sig", [96]byte{0: 1, 32: 2, 64: 3, 95: 0xff},
 			"01" + repeat("00", 31) + "02" + repeat("00", 31) + "03" + repeat("00", 30) + "ff",
-			h(h(chunk("01"), chunk("02")), h("30"+repeat("00", 30)+"ff", chunk(""))), getTyp((*[96]byte)(nil))},
+			h(h(chunk("01"), chunk("02")), h("03"+repeat("00", 30)+"ff", chunk(""))), getTyp((*[96]byte)(nil))},
 		{"emptyTestStruct", emptyTestStruct{}, "", chunk(""), getTyp((*emptyTestStruct)(nil))},
 		{"singleFieldTestStruct", singleFieldTestStruct{0xab}, "ab", chunk("ab"), getTyp((*singleFieldTestStruct)(nil))},
 
