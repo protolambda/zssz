@@ -107,9 +107,9 @@ func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		if e > byteLen {
 			x := [32]byte{}
 			copy(x[:], data[s:byteLen])
-			if bitLen & 7 != 0 {  // if we not already cut off the delimiting bit with a bytes boundary
+			if bitLen&7 != 0 { // if we not already cut off the delimiting bit with a bytes boundary
 				// find the index of the length-determining 1 bit (bitlist length == index of this bit)
-				last := x[:byteLen & 31]
+				last := x[:byteLen&31]
 				bitLen := bitfields.BitlistLen(last)
 				bitfields.SetBit(last, bitLen, false) // zero out the length bit.
 			}
