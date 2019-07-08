@@ -21,9 +21,15 @@ const (
 )
 
 func GetDepth(v uint32) (out uint8) {
-	// bitmagic: binary search through the uint32,
-	// and set the corresponding index bit (5 bits -> 0x11111 = 31 is max.) in the output.
-	// Example (in out): (0 0), (1 0), (2 1), (3 1), (4 2), (5 2), (6 2), (7 2), (8 3), (9 3)
+	// bitmagic: binary search through a uint32, offset down by 1 to not round powers of 2 up.
+	// Then adding 1 to it to not get the index of the first bit, but the length of the bits (depth of tree)
+	// Zero is a special case, it has a 0 depth.
+	// Example:
+	//  (in out): (0 0), (1 1), (2 1), (3 2), (4 2), (5 3), (6 3), (7 3), (8 3), (9 4)
+	if v == 0 {
+		return 0
+	}
+	v--
 	if v&mask4 != 0 {
 		v >>= bit4
 		out |= bit4
@@ -43,7 +49,7 @@ func GetDepth(v uint32) (out uint8) {
 	if v&mask0 != 0 {
 		out |= bit0
 	}
-	out += 1
+	out++
 	return
 }
 
