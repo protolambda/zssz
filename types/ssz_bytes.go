@@ -12,7 +12,7 @@ import (
 )
 
 type SSZBytes struct {
-	limit uint32
+	limit uint64
 }
 
 func NewSSZBytes(typ reflect.Type) (*SSZBytes, error) {
@@ -29,15 +29,15 @@ func NewSSZBytes(typ reflect.Type) (*SSZBytes, error) {
 	return &SSZBytes{limit: limit}, nil
 }
 
-func (v *SSZBytes) FuzzReqLen() uint32 {
-	return 4
+func (v *SSZBytes) FuzzReqLen() uint64 {
+	return 8
 }
 
-func (v *SSZBytes) FixedLen() uint32 {
+func (v *SSZBytes) FixedLen() uint64 {
 	return 0
 }
 
-func (v *SSZBytes) MinLen() uint32 {
+func (v *SSZBytes) MinLen() uint64 {
 	return 0
 }
 
@@ -52,9 +52,9 @@ func (v *SSZBytes) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	var length uint32
+	var length uint64
 	if dr.IsFuzzMode() {
-		x, err := dr.ReadUint32()
+		x, err := dr.ReadUint64()
 		if err != nil {
 			return err
 		}
@@ -77,10 +77,10 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZBytes) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 	data := *(*[]byte)(unsafe.Pointer(sh))
-	dataLen := uint32(len(data))
+	dataLen := uint64(len(data))
 	leafCount := (dataLen + 31) >> 5
 	leafLimit := (v.limit + 31) >> 5
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		s := i << 5
 		e := (i + 1) << 5
 		// pad the data

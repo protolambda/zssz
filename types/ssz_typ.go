@@ -8,16 +8,16 @@ import (
 )
 
 // Note: when this is changed,
-//  don't forget to change the Read/PutUint32 calls that handle the length value in this allocated space.
+//  don't forget to change the ReadOffset/WriteOffset calls that handle the length value in this allocated space.
 const BYTES_PER_LENGTH_OFFSET = 4
 
 type SSZ interface {
 	// The minimum length to read the object from fuzzing mode. Must be non-0.
-	FuzzReqLen() uint32
+	FuzzReqLen() uint64
 	// The minimum length of the object
-	MinLen() uint32
+	MinLen() uint64
 	// The length of the fixed-size part
-	FixedLen() uint32
+	FixedLen() uint64
 	// If the type is fixed-size
 	IsFixed() bool
 	// Reads object data from pointer, writes ssz-encoded data to EncodingBuffer

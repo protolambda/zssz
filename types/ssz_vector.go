@@ -11,33 +11,33 @@ import (
 )
 
 type SSZVector struct {
-	length      uint32
+	length      uint64
 	elemMemSize uintptr
 	elemSSZ     SSZ
 	isFixedLen  bool
-	fixedLen    uint32
-	minLen      uint32
-	fuzzReqLen  uint32
+	fixedLen    uint64
+	minLen      uint64
+	fuzzReqLen  uint64
 }
 
 func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 	if typ.Kind() != reflect.Array {
 		return nil, fmt.Errorf("typ is not a fixed-length array")
 	}
-	length := uint32(typ.Len())
+	length := uint64(typ.Len())
 	elemTyp := typ.Elem()
 
 	elemSSZ, err := factory(elemTyp)
 	if err != nil {
 		return nil, err
 	}
-	var fixedElemLen, minElemLen uint32
+	var fixedElemLen, minElemLen uint64
 	if elemSSZ.IsFixed() {
 		fixedElemLen = elemSSZ.FixedLen()
 		minElemLen = elemSSZ.MinLen()
 	} else {
-		fixedElemLen = uint32(BYTES_PER_LENGTH_OFFSET)
-		minElemLen = uint32(BYTES_PER_LENGTH_OFFSET) + elemSSZ.MinLen()
+		fixedElemLen = uint64(BYTES_PER_LENGTH_OFFSET)
+		minElemLen = uint64(BYTES_PER_LENGTH_OFFSET) + elemSSZ.MinLen()
 	}
 	res := &SSZVector{
 		length:      length,
@@ -51,15 +51,15 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 	return res, nil
 }
 
-func (v *SSZVector) FuzzReqLen() uint32 {
+func (v *SSZVector) FuzzReqLen() uint64 {
 	return v.fuzzReqLen
 }
 
-func (v *SSZVector) MinLen() uint32 {
+func (v *SSZVector) MinLen() uint64 {
 	return v.minLen
 }
 
-func (v *SSZVector) FixedLen() uint32 {
+func (v *SSZVector) FixedLen() uint64 {
 	return v.fixedLen
 }
 
@@ -90,7 +90,7 @@ func (v *SSZVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		v := elemHtr(h, unsafe.Pointer(uintptr(p)+(elemSize*uintptr(i))))
 		return v[:]
 	}

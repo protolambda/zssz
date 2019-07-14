@@ -23,10 +23,10 @@ type ContainerField struct {
 type SSZContainer struct {
 	Fields      []ContainerField
 	isFixedLen  bool
-	fixedLen    uint32
-	minLen      uint32
-	offsetCount uint32
-	fuzzReqLen  uint32
+	fixedLen    uint64
+	minLen      uint64
+	offsetCount uint64
+	fuzzReqLen  uint64
 }
 
 func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, error) {
@@ -60,15 +60,15 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 	return res, nil
 }
 
-func (v *SSZContainer) FuzzReqLen() uint32 {
+func (v *SSZContainer) FuzzReqLen() uint64 {
 	return v.fuzzReqLen
 }
 
-func (v *SSZContainer) MinLen() uint32 {
+func (v *SSZContainer) MinLen() uint64 {
 	return v.minLen
 }
 
-func (v *SSZContainer) FixedLen() uint32 {
+func (v *SSZContainer) FixedLen() uint64 {
 	return v.fixedLen
 }
 
@@ -139,9 +139,9 @@ func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointe
 func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error {
 	// technically we could also ignore offset correctness and skip ahead,
 	//  but we may want to enforce proper offsets.
-	offsets := make([]uint32, 0, v.offsetCount)
+	offsets := make([]uint64, 0, v.offsetCount)
 	startIndex := dr.Index()
-	fixedI := uint32(dr.Index())
+	fixedI := uint64(dr.Index())
 	for _, f := range v.Fields {
 		if f.ssz.IsFixed() {
 			fixedI += f.ssz.FixedLen()
@@ -152,7 +152,7 @@ func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error
 		} else {
 			fixedI += BYTES_PER_LENGTH_OFFSET
 			// write an offset to the fixed data, to find the dynamic data with as a reader
-			offset, err := dr.ReadUint32()
+			offset, err := dr.ReadOffset()
 			if err != nil {
 				return err
 			}
@@ -166,7 +166,7 @@ func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error
 	if expectedIndex := v.fixedLen + startIndex; pivotIndex != expectedIndex {
 		return fmt.Errorf("expected to read to %d bytes for fixed part of container, got to %d", expectedIndex, pivotIndex)
 	}
-	var currentOffset uint32
+	var currentOffset uint64
 	i := 0
 	for _, f := range v.Fields {
 		if !f.ssz.IsFixed() {
@@ -177,7 +177,7 @@ func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error
 			// go to next offset
 			i++
 			// calculate the scope based on next offset, and max. value of this scope for the last value
-			var count uint32
+			var count uint64
 			if i < len(offsets) {
 				if offset := offsets[i]; offset < currentOffset {
 					return fmt.Errorf("offset %d is invalid", i)
@@ -211,23 +211,23 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 }
 
 func (v *SSZContainer) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		f := v.Fields[i]
 		r := f.ssz.HashTreeRoot(h, unsafe.Pointer(uintptr(p)+f.memOffset))
 		return r[:]
 	}
-	leafCount := uint32(len(v.Fields))
+	leafCount := uint64(len(v.Fields))
 	return merkle.Merkleize(h, leafCount, leafCount, leaf)
 }
 
 func (v *SSZContainer) SigningRoot(h HashFn, p unsafe.Pointer) [32]byte {
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		f := v.Fields[i]
 		r := f.ssz.HashTreeRoot(h, unsafe.Pointer(uintptr(p)+f.memOffset))
 		return r[:]
 	}
 	// truncate last field
-	leafCount := uint32(len(v.Fields))
+	leafCount := uint64(len(v.Fields))
 	if leafCount != 0 {
 		leafCount--
 	}

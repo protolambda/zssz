@@ -7,8 +7,8 @@ package bitfields
 //  - Bitlists need to be of kind []byte (packed bits, incl delimiter bit)
 //  - Bitvectors need to be of kind [N]byte (packed bits)
 type Bitfield interface {
-	Get(i uint32) bool
-	Set(i uint32, v bool)
+	Get(i uint64) bool
+	Set(i uint64, v bool)
 }
 
 // bitfields implementing this can be checked to be of a valid or not. Useful for untrusted bitfields.
@@ -19,12 +19,12 @@ type CheckedBitfield interface {
 
 // the exact bitlength can be determined for bitfields implementing this method.
 type SizedBits interface {
-	BitLen() uint32
+	BitLen() uint64
 }
 
 // Get index of left-most 1 bit.
 // 0 (incl.) to 8 (excl.)
-func BitIndex(v byte) (out uint32) {
+func BitIndex(v byte) (out uint64) {
 	// going to be prettier with new Go 1.13 binary constant syntax
 	if v&0xf0 != 0 { // 11110000
 		out |= 4
@@ -43,13 +43,13 @@ func BitIndex(v byte) (out uint32) {
 
 // Helper function to implement Bitfields with.
 // Assumes i is a valid bit-index to retrieve a bit from bytes b.
-func GetBit(b []byte, i uint32) bool {
+func GetBit(b []byte, i uint64) bool {
 	return (b[i>>3]>>(i&7))&1 == 1
 }
 
 // Helper function to implement Bitfields with.
 // Assumes i is a valid bit-index to set a bit within bytes b.
-func SetBit(b []byte, i uint32, v bool) {
+func SetBit(b []byte, i uint64, v bool) {
 	if bit := byte(1) << (i & 7); v {
 		b[i>>3] |= bit
 	} else {

@@ -13,8 +13,8 @@ import (
 type SSZBasicVector struct {
 	elemKind reflect.Kind
 	elemSSZ  *SSZBasic
-	length   uint32
-	fixedLen uint32
+	length   uint64
+	fixedLen uint64
 }
 
 func NewSSZBasicVector(typ reflect.Type) (*SSZBasicVector, error) {
@@ -27,10 +27,10 @@ func NewSSZBasicVector(typ reflect.Type) (*SSZBasicVector, error) {
 	if err != nil {
 		return nil, err
 	}
-	if elemSSZ.Length != uint32(elemTyp.Size()) {
+	if elemSSZ.Length != uint64(elemTyp.Size()) {
 		return nil, fmt.Errorf("basic element type has different size than SSZ type unexpectedly, ssz: %d, go: %d", elemSSZ.Length, elemTyp.Size())
 	}
-	length := uint32(typ.Len())
+	length := uint64(typ.Len())
 
 	res := &SSZBasicVector{
 		elemKind: elemKind,
@@ -41,16 +41,16 @@ func NewSSZBasicVector(typ reflect.Type) (*SSZBasicVector, error) {
 	return res, nil
 }
 
-func (v *SSZBasicVector) FuzzReqLen() uint32 {
+func (v *SSZBasicVector) FuzzReqLen() uint64 {
 	// equal to fixed length
 	return v.fixedLen
 }
 
-func (v *SSZBasicVector) MinLen() uint32 {
+func (v *SSZBasicVector) MinLen() uint64 {
 	return v.fixedLen
 }
 
-func (v *SSZBasicVector) FixedLen() uint32 {
+func (v *SSZBasicVector) FixedLen() uint64 {
 	return v.fixedLen
 }
 

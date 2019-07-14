@@ -13,8 +13,8 @@ import (
 )
 
 type SSZBitvector struct {
-	bitLen  uint32
-	byteLen uint32
+	bitLen  uint64
+	byteLen uint64
 }
 
 var bitvectorMeta = reflect.TypeOf((*bitfields.BitvectorMeta)(nil)).Elem()
@@ -32,7 +32,7 @@ func NewSSZBitvector(typ reflect.Type) (*SSZBitvector, error) {
 	}
 	typedNil := reflect.New(ptrTyp).Elem().Interface().(bitfields.BitvectorMeta)
 	bitLen := typedNil.BitLen()
-	byteLen := uint32(typ.Len())
+	byteLen := uint64(typ.Len())
 	if (bitLen+7)>>3 != byteLen {
 		return nil, fmt.Errorf("bitvector type has not the expected %d bytes to cover %d bits", byteLen, bitLen)
 	}
@@ -41,17 +41,17 @@ func NewSSZBitvector(typ reflect.Type) (*SSZBitvector, error) {
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitvector) FuzzReqLen() uint32 {
+func (v *SSZBitvector) FuzzReqLen() uint64 {
 	return v.byteLen
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitvector) FixedLen() uint32 {
+func (v *SSZBitvector) FixedLen() uint64 {
 	return v.byteLen
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitvector) MinLen() uint32 {
+func (v *SSZBitvector) MinLen() uint64 {
 	return v.byteLen
 }
 
@@ -79,7 +79,7 @@ func (v *SSZBitvector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.GetSliceHeader(p, v.byteLen)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	leafCount := (v.byteLen + 31) >> 5
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		s := i << 5
 		e := (i + 1) << 5
 		// pad the data

@@ -8,7 +8,7 @@ import (
 
 var listType = reflect.TypeOf((*lists.List)(nil)).Elem()
 
-func ReadListLimit(typ reflect.Type) (uint32, error) {
+func ReadListLimit(typ reflect.Type) (uint64, error) {
 	ptrTyp := reflect.PtrTo(typ)
 	if !ptrTyp.Implements(listType) {
 		return 0, fmt.Errorf("*typ (pointer type) is not a ssz list")

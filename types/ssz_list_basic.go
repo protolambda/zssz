@@ -15,7 +15,7 @@ type SSZBasicList struct {
 	alloc    ptrutil.SliceAllocationFn
 	elemKind reflect.Kind
 	elemSSZ  *SSZBasic
-	limit    uint32
+	limit    uint64
 }
 
 func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
@@ -33,7 +33,7 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	if err != nil {
 		return nil, err
 	}
-	if elemSSZ.Length != uint32(elemTyp.Size()) {
+	if elemSSZ.Length != uint64(elemTyp.Size()) {
 		return nil, fmt.Errorf("basic element type has different size than SSZ type unexpectedly, ssz: %d, go: %d", elemSSZ.Length, elemTyp.Size())
 	}
 
@@ -46,15 +46,15 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	return res, nil
 }
 
-func (v *SSZBasicList) FuzzReqLen() uint32 {
+func (v *SSZBasicList) FuzzReqLen() uint64 {
 	return 4
 }
 
-func (v *SSZBasicList) MinLen() uint32 {
+func (v *SSZBasicList) MinLen() uint64 {
 	return 0
 }
 
-func (v *SSZBasicList) FixedLen() uint32 {
+func (v *SSZBasicList) FixedLen() uint64 {
 	return 0
 }
 
@@ -69,14 +69,14 @@ func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		LittleEndianBasicSeriesEncode(eb, sh.Data, uint32(sh.Len)*v.elemSSZ.Length)
+		LittleEndianBasicSeriesEncode(eb, sh.Data, uint64(sh.Len)*v.elemSSZ.Length)
 	} else {
-		EncodeFixedSeries(v.elemSSZ.Encoder, uint32(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
+		EncodeFixedSeries(v.elemSSZ.Encoder, uint64(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
 	}
 }
 
 func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
-	x, err := dr.ReadUint32()
+	x, err := dr.ReadUint64()
 	if err != nil {
 		return err
 	}
@@ -122,11 +122,11 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 
-	bytesLen := uint32(sh.Len) * v.elemSSZ.Length
+	bytesLen := uint64(sh.Len) * v.elemSSZ.Length
 	bytesLimit := v.limit * v.elemSSZ.Length
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit), uint32(sh.Len))
+		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit), uint64(sh.Len))
 	} else {
-		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit, uint8(v.elemSSZ.Length)), uint32(sh.Len))
+		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit, uint8(v.elemSSZ.Length)), uint64(sh.Len))
 	}
 }

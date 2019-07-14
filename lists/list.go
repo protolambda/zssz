@@ -5,5 +5,5 @@ package lists
 // but are not supported to be merkleized with HashTreeRoot.
 type List interface {
 	// Limit (count of elements) of the list
-	Limit() uint32
+	Limit() uint64
 }

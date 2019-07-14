@@ -22,8 +22,8 @@ type Bitlist interface {
 //  - an empty raw bitlist: a default 0 bitlist will be of length 0 too.
 //  - a bitlist with a leading 0 byte: return the bitlist raw bit length,
 //     excluding the last byte (As if it was full 0 padding).
-func BitlistLen(b []byte) uint32 {
-	byteLen := uint32(len(b))
+func BitlistLen(b []byte) uint64 {
+	byteLen := uint64(len(b))
 	if byteLen == 0 {
 		return 0
 	}

@@ -34,10 +34,10 @@ func (h HashFn) Combi(a [32]byte, b [32]byte) [32]byte {
 	return h(v[:])
 }
 
-func (h HashFn) MixIn(a [32]byte, i uint32) [32]byte {
+func (h HashFn) MixIn(a [32]byte, i uint64) [32]byte {
 	v := [64]byte{}
 	copy(v[:32], a[:])
 	copy(v[32:], make([]byte, 32, 32))
-	binary.LittleEndian.PutUint32(v[32:], i)
+	binary.LittleEndian.PutUint64(v[32:], i)
 	return h(v[:])
 }

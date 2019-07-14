@@ -17,8 +17,8 @@ type Bitvector interface {
 // It checks if:
 //  1. b has the same amount of bytes as necessary for n bits.
 //  2. unused bits in b are 0
-func BitvectorCheck(b []byte, n uint32) error {
-	byteLen := uint32(len(b))
+func BitvectorCheck(b []byte, n uint64) error {
+	byteLen := uint64(len(b))
 	if expected := (n + 7) >> 3; byteLen != expected {
 		return fmt.Errorf("bitvector %b of %d bytes has not expected length in bytes %d", b, n, expected)
 	}

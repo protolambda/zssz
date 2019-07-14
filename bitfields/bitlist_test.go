@@ -8,7 +8,7 @@ import (
 func TestBitlistLen(t *testing.T) {
 	cases := []struct {
 		v     []byte
-		n     uint32
+		n     uint64
 		valid bool
 	}{
 		{[]byte{0}, 0, false},

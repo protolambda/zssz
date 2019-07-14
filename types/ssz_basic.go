@@ -13,21 +13,21 @@ import (
 type BasicHtrFn func(pointer unsafe.Pointer) [32]byte
 
 type SSZBasic struct {
-	Length  uint32
+	Length  uint64
 	Encoder EncoderFn
 	Decoder DecoderFn
 	HTR     BasicHtrFn
 }
 
-func (v *SSZBasic) FuzzReqLen() uint32 {
+func (v *SSZBasic) FuzzReqLen() uint64 {
 	return v.Length
 }
 
-func (v *SSZBasic) FixedLen() uint32 {
+func (v *SSZBasic) FixedLen() uint64 {
 	return v.Length
 }
 
-func (v *SSZBasic) MinLen() uint32 {
+func (v *SSZBasic) MinLen() uint64 {
 	return v.Length
 }
 

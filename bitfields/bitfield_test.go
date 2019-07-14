@@ -8,7 +8,7 @@ import (
 func TestBitIndex(t *testing.T) {
 	cases := []struct {
 		v     byte
-		index uint32
+		index uint64
 	}{
 		{0, 0},
 		{1, 0},
@@ -32,7 +32,7 @@ func TestBitIndex(t *testing.T) {
 
 func BenchmarkBitIndex(b *testing.B) {
 	// sum results for fun, and verify it has the same result with different benched solutions with same N.
-	out := uint32(0)
+	out := uint64(0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		out += BitIndex(byte(i))
@@ -61,10 +61,10 @@ var lookup = [256]byte{
 
 func BenchmarkLookupBitIndex(b *testing.B) {
 	// sum results for fun, and verify it has the same result with different benched solutions with same N.
-	out := uint32(0)
+	out := uint64(0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		out += uint32(lookup[byte(i)])
+		out += uint64(lookup[byte(i)])
 	}
 	b.StopTimer()
 	b.Logf("result after %d runs: %d", b.N, out)
@@ -73,7 +73,7 @@ func BenchmarkLookupBitIndex(b *testing.B) {
 func TestSetBit(t *testing.T) {
 	cases := []struct {
 		v         []byte
-		index     uint32
+		index     uint64
 		expected1 string
 		expected0 string
 	}{

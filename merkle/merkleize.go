@@ -5,11 +5,12 @@ import (
 )
 
 const (
-	mask0 = ^uint32((1 << (1 << iota)) - 1)
+	mask0 = ^uint64((1 << (1 << iota)) - 1)
 	mask1
 	mask2
 	mask3
 	mask4
+	mask5
 )
 
 const (
@@ -18,9 +19,10 @@ const (
 	bit2
 	bit3
 	bit4
+	bit5
 )
 
-func GetDepth(v uint32) (out uint8) {
+func GetDepth(v uint64) (out uint8) {
 	// bitmagic: binary search through a uint32, offset down by 1 to not round powers of 2 up.
 	// Then adding 1 to it to not get the index of the first bit, but the length of the bits (depth of tree)
 	// Zero is a special case, it has a 0 depth.
@@ -30,6 +32,10 @@ func GetDepth(v uint32) (out uint8) {
 		return 0
 	}
 	v--
+	if v&mask5 != 0 {
+		v >>= bit5
+		out |= bit5
+	}
 	if v&mask4 != 0 {
 		v >>= bit4
 		out |= bit4
@@ -54,7 +60,7 @@ func GetDepth(v uint32) (out uint8) {
 }
 
 // Merkleize with log(N) space allocation
-func Merkleize(hasher HashFn, count uint32, limit uint32, leaf func(i uint32) []byte) (out [32]byte) {
+func Merkleize(hasher HashFn, count uint64, limit uint64, leaf func(i uint64) []byte) (out [32]byte) {
 	if count > limit {
 		panic("merkleizing list that is too large, over limit")
 	}
@@ -73,11 +79,11 @@ func Merkleize(hasher HashFn, count uint32, limit uint32, leaf func(i uint32) []
 	hArr := [32]byte{}
 	h := hArr[:]
 
-	merge := func(i uint32) {
+	merge := func(i uint64) {
 		// merge back up from bottom to top, as far as we can
 		for j = 0; ; j++ {
 			// stop merging when we are in the left side of the next combi
-			if i&(uint32(1)<<j) == 0 {
+			if i&(uint64(1)<<j) == 0 {
 				// if we are at the count, we want to merge in zero-hashes for padding
 				if i == count && j < depth {
 					v := hasher.Combi(hArr, ZeroHashes[j])
@@ -96,13 +102,13 @@ func Merkleize(hasher HashFn, count uint32, limit uint32, leaf func(i uint32) []
 	}
 
 	// merge in leaf by leaf.
-	for i := uint32(0); i < count; i++ {
+	for i := uint64(0); i < count; i++ {
 		copy(h[:], leaf(i))
 		merge(i)
 	}
 
 	// complement with 0 if empty, or if not the right power of 2
-	if (uint32(1) << depth) != count {
+	if (uint64(1) << depth) != count {
 		copy(h[:], ZeroHashes[0][:])
 		merge(count)
 	}

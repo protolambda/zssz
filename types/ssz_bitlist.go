@@ -13,8 +13,8 @@ import (
 )
 
 type SSZBitlist struct {
-	bitLimit  uint32
-	leafLimit uint32
+	bitLimit  uint64
+	leafLimit uint64
 }
 
 var bitlistMeta = reflect.TypeOf((*bitfields.BitlistMeta)(nil)).Elem()
@@ -35,18 +35,18 @@ func NewSSZBitlist(typ reflect.Type) (*SSZBitlist, error) {
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitlist) FuzzReqLen() uint32 {
-	// 4 for a random byte count, 1 for a random leading byte
-	return 4 + 1
+func (v *SSZBitlist) FuzzReqLen() uint64 {
+	// 8 for a random byte count, 1 for a random leading byte
+	return 8 + 1
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitlist) FixedLen() uint32 {
+func (v *SSZBitlist) FixedLen() uint64 {
 	return 0
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitlist) MinLen() uint32 {
+func (v *SSZBitlist) MinLen() uint64 {
 	// leading bit to mark it the 0 length makes it 1 byte.
 	return 1
 }
@@ -62,9 +62,9 @@ func (v *SSZBitlist) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZBitlist) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	var byteLen uint32
+	var byteLen uint64
 	if dr.IsFuzzMode() {
-		x, err := dr.ReadUint32()
+		x, err := dr.ReadUint64()
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	bitLen := bitfields.BitlistLen(data)
 	byteLen := (bitLen + 7) >> 3
 	leafCount := (byteLen + 31) >> 5
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		s := i << 5
 		e := (i + 1) << 5
 		// pad the data
