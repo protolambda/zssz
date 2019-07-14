@@ -16,6 +16,7 @@ type SSZBasicList struct {
 	elemKind reflect.Kind
 	elemSSZ  *SSZBasic
 	limit    uint64
+	byteLimit uint64
 }
 
 func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
@@ -42,16 +43,25 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 		elemKind: elemKind,
 		elemSSZ:  elemSSZ,
 		limit:    limit,
+		byteLimit: limit * elemSSZ.Length,
 	}
 	return res, nil
 }
 
-func (v *SSZBasicList) FuzzReqLen() uint64 {
-	return 4
+func (v *SSZBasicList) FuzzMinLen() uint64 {
+	return 8
+}
+
+func (v *SSZBasicList) FuzzMaxLen() uint64 {
+	return 8 + v.byteLimit
 }
 
 func (v *SSZBasicList) MinLen() uint64 {
 	return 0
+}
+
+func (v *SSZBasicList) MaxLen() uint64 {
+	return v.byteLimit
 }
 
 func (v *SSZBasicList) FixedLen() uint64 {
@@ -81,8 +91,8 @@ func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) erro
 		return err
 	}
 	span := dr.GetBytesSpan()
-	if byteLimit := v.limit * v.elemSSZ.FuzzReqLen(); byteLimit > span {
-		span = byteLimit
+	if v.byteLimit > span {
+		span = v.byteLimit
 	}
 	if span == 0 {
 		return nil

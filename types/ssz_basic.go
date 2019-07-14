@@ -19,15 +19,23 @@ type SSZBasic struct {
 	HTR     BasicHtrFn
 }
 
-func (v *SSZBasic) FuzzReqLen() uint64 {
+func (v *SSZBasic) FuzzMinLen() uint64 {
 	return v.Length
 }
 
-func (v *SSZBasic) FixedLen() uint64 {
+func (v *SSZBasic) FuzzMaxLen() uint64 {
 	return v.Length
 }
 
 func (v *SSZBasic) MinLen() uint64 {
+	return v.Length
+}
+
+func (v *SSZBasic) MaxLen() uint64 {
+	return v.Length
+}
+
+func (v *SSZBasic) FixedLen() uint64 {
 	return v.Length
 }
 

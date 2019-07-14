@@ -41,17 +41,27 @@ func NewSSZBitvector(typ reflect.Type) (*SSZBitvector, error) {
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitvector) FuzzReqLen() uint64 {
+func (v *SSZBitvector) FuzzMinLen() uint64 {
 	return v.byteLen
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitvector) FixedLen() uint64 {
+func (v *SSZBitvector) FuzzMaxLen() uint64 {
 	return v.byteLen
 }
 
 // in bytes (rounded up), not bits
 func (v *SSZBitvector) MinLen() uint64 {
+	return v.byteLen
+}
+
+// in bytes (rounded up), not bits
+func (v *SSZBitvector) MaxLen() uint64 {
+	return v.byteLen
+}
+
+// in bytes (rounded up), not bits
+func (v *SSZBitvector) FixedLen() uint64 {
 	return v.byteLen
 }
 

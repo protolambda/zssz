@@ -99,86 +99,86 @@ func repeat(v string, count int) (out string) {
 
 type bitvec513 [64 + 1]byte
 
-func (_ *bitvec513) BitLen() uint32 { return 513 }
+func (_ *bitvec513) BitLen() uint64 { return 513 }
 
 type bitvec512 [64]byte
 
-func (_ *bitvec512) BitLen() uint32 { return 512 }
+func (_ *bitvec512) BitLen() uint64 { return 512 }
 
 type bitvec16 [2]byte
 
-func (_ *bitvec16) BitLen() uint32 { return 16 }
+func (_ *bitvec16) BitLen() uint64 { return 16 }
 
 type bitvec10 [2]byte
 
-func (_ *bitvec10) BitLen() uint32 { return 10 }
+func (_ *bitvec10) BitLen() uint64 { return 10 }
 
 type bitvec8 [1]byte
 
-func (_ *bitvec8) BitLen() uint32 { return 8 }
+func (_ *bitvec8) BitLen() uint64 { return 8 }
 
 type bitvec4 [1]byte
 
-func (_ *bitvec4) BitLen() uint32 { return 4 }
+func (_ *bitvec4) BitLen() uint64 { return 4 }
 
 type bitvec3 [1]byte
 
-func (_ *bitvec3) BitLen() uint32 { return 3 }
+func (_ *bitvec3) BitLen() uint64 { return 3 }
 
 // Many different Bitlist types for testing
 
 type bitlist513 []byte
 
-func (_ *bitlist513) Limit() uint32 { return 513 }
-func (b bitlist513) BitLen() uint32 { return bitfields.BitlistLen(b) }
+func (_ *bitlist513) Limit() uint64 { return 513 }
+func (b bitlist513) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist512 []byte
 
-func (_ *bitlist512) Limit() uint32 { return 512 }
-func (b bitlist512) BitLen() uint32 { return bitfields.BitlistLen(b) }
+func (_ *bitlist512) Limit() uint64 { return 512 }
+func (b bitlist512) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist16 []byte
 
-func (_ *bitlist16) Limit() uint32 { return 16 }
-func (b bitlist16) BitLen() uint32 { return bitfields.BitlistLen(b) }
+func (_ *bitlist16) Limit() uint64 { return 16 }
+func (b bitlist16) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist10 []byte
 
-func (_ *bitlist10) Limit() uint32 { return 10 }
-func (b bitlist10) BitLen() uint32 { return bitfields.BitlistLen(b) }
+func (_ *bitlist10) Limit() uint64 { return 10 }
+func (b bitlist10) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist8 []byte
 
-func (_ *bitlist8) Limit() uint32 { return 8 }
-func (b bitlist8) BitLen() uint32 { return bitfields.BitlistLen(b) }
+func (_ *bitlist8) Limit() uint64 { return 8 }
+func (b bitlist8) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist4 []byte
 
-func (_ *bitlist4) Limit() uint32 { return 4 }
-func (b bitlist4) BitLen() uint32 { return bitfields.BitlistLen(b) }
+func (_ *bitlist4) Limit() uint64 { return 4 }
+func (b bitlist4) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist3 []byte
 
-func (_ *bitlist3) Limit() uint32 { return 3 }
-func (b bitlist3) BitLen() uint32 { return bitfields.BitlistLen(b) }
+func (_ *bitlist3) Limit() uint64 { return 3 }
+func (b bitlist3) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 // Some list types for testing
 
 type list32uint16 []uint16
 
-func (_ *list32uint16) Limit() uint32 { return 32 }
+func (_ *list32uint16) Limit() uint64 { return 32 }
 
 type list128uint32 []uint32
 
-func (_ *list128uint32) Limit() uint32 { return 128 }
+func (_ *list128uint32) Limit() uint64 { return 128 }
 
 type list64bytes32 [][32]byte
 
-func (_ *list64bytes32) Limit() uint32 { return 64 }
+func (_ *list64bytes32) Limit() uint64 { return 64 }
 
 type list128bytes32 [][32]byte
 
-func (_ *list128bytes32) Limit() uint32 { return 128 }
+func (_ *list128bytes32) Limit() uint64 { return 128 }
 
 func getTyp(ptr interface{}) reflect.Type {
 	return reflect.TypeOf(ptr).Elem()
@@ -454,7 +454,7 @@ func TestDecode(t *testing.T) {
 			r := bytes.NewReader(data)
 			// For dynamic types, we need to pass the length of the message to the decoder.
 			// See SSZ-envelope discussion
-			bytesLen := uint32(len(tt.hex)) / 2
+			bytesLen := uint64(len(tt.hex)) / 2
 
 			destination := reflect.New(tt.typ).Interface()
 			if err := Decode(r, bytesLen, destination, sszTyp); err != nil {

@@ -16,6 +16,8 @@ type SSZList struct {
 	elemMemSize uintptr
 	elemSSZ     SSZ
 	limit       uint64
+	byteLimit   uint64
+	maxFuzzLen  uint64
 }
 
 func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
@@ -38,16 +40,26 @@ func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 		elemMemSize: elemTyp.Size(),
 		elemSSZ:     elemSSZ,
 		limit:       limit,
+		byteLimit:   limit * (BYTES_PER_LENGTH_OFFSET + elemSSZ.MaxLen()),
+		maxFuzzLen:  8 + (limit * elemSSZ.FuzzMaxLen()),
 	}
 	return res, nil
 }
 
-func (v *SSZList) FuzzReqLen() uint64 {
+func (v *SSZList) FuzzMinLen() uint64 {
 	return 8
+}
+
+func (v *SSZList) FuzzMaxLen() uint64 {
+	return v.maxFuzzLen
 }
 
 func (v *SSZList) MinLen() uint64 {
 	return 0
+}
+
+func (v *SSZList) MaxLen() uint64 {
+	return v.byteLimit
 }
 
 func (v *SSZList) FixedLen() uint64 {
@@ -73,12 +85,12 @@ func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
 		return err
 	}
 	span := dr.GetBytesSpan()
-	if byteLimit := v.limit * v.elemSSZ.FuzzReqLen(); span > byteLimit {
-		span = byteLimit
+	if span > v.maxFuzzLen - 8 {
+		span = v.maxFuzzLen - 8
 	}
 	length := uint64(0)
 	if span != 0 {
-		length = (x % span) / v.elemSSZ.FuzzReqLen()
+		length = (x % span) / v.elemSSZ.FuzzMinLen()
 	}
 	contentsPtr := v.alloc(p, length)
 	if v.elemSSZ.IsFixed() {

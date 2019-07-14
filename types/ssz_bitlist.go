@@ -41,20 +41,31 @@ func NewSSZBitlist(typ reflect.Type) (*SSZBitlist, error) {
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitlist) FuzzReqLen() uint64 {
+func (v *SSZBitlist) FuzzMinLen() uint64 {
 	// 8 for a random byte count, 1 for a random leading byte
 	return 8 + 1
 }
 
 // in bytes (rounded up), not bits
-func (v *SSZBitlist) FixedLen() uint64 {
-	return 0
+func (v *SSZBitlist) FuzzMaxLen() uint64 {
+	// 8 for a random byte count, limit for maximum fill
+	return 8 + v.byteLimit
 }
 
-// in bytes (rounded up), not bits
+// in bytes (rounded up), not bits. Includes the delimiting 1 bit.
 func (v *SSZBitlist) MinLen() uint64 {
 	// leading bit to mark it the 0 length makes it 1 byte.
 	return 1
+}
+
+// in bytes (rounded up), not bits
+func (v *SSZBitlist) MaxLen() uint64 {
+	return v.byteLimit
+}
+
+// in bytes (rounded up), not bits
+func (v *SSZBitlist) FixedLen() uint64 {
+	return 0
 }
 
 func (v *SSZBitlist) IsFixed() bool {

@@ -108,7 +108,7 @@ func DecodeVarSeries(decFn DecoderFn, length uint64, elemMemSize uintptr, dr *De
 
 func DecodeVarSeriesFuzzMode(elem SSZ, length uint64, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
 	memOffset := uintptr(0)
-	elemFuzzReqLen := elem.FuzzReqLen()
+	elemFuzzReqLen := elem.FuzzMinLen()
 	lengthLeftOver := length * elemFuzzReqLen
 
 	for i := uint64(0); i < length; i++ {

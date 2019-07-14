@@ -25,8 +25,10 @@ type SSZContainer struct {
 	isFixedLen  bool
 	fixedLen    uint64
 	minLen      uint64
+	maxLen      uint64
 	offsetCount uint64
-	fuzzReqLen  uint64
+	fuzzMinLen  uint64
+	fuzzMaxLen  uint64
 }
 
 func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, error) {
@@ -45,14 +47,22 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 			return nil, err
 		}
 		if fieldSSZ.IsFixed() {
-			res.fixedLen += fieldSSZ.FixedLen()
-			res.minLen += fieldSSZ.MinLen()
+			fixed, min, max := fieldSSZ.FixedLen(), fieldSSZ.MinLen(), fieldSSZ.MaxLen()
+			if fixed != min || fixed != max {
+				return nil,
+					fmt.Errorf("fixed-size field %d ('%s') in struct has invalid min/max length", i, field.Name)
+			}
+			res.fixedLen += fixed
+			res.minLen += fixed
+			res.maxLen += fixed
 		} else {
 			res.fixedLen += BYTES_PER_LENGTH_OFFSET
 			res.minLen += BYTES_PER_LENGTH_OFFSET + fieldSSZ.MinLen()
+			res.maxLen += BYTES_PER_LENGTH_OFFSET + fieldSSZ.MaxLen()
 			res.offsetCount++
 		}
-		res.fuzzReqLen += fieldSSZ.FuzzReqLen()
+		res.fuzzMinLen += fieldSSZ.FuzzMinLen()
+		res.fuzzMaxLen += fieldSSZ.FuzzMaxLen()
 
 		res.Fields = append(res.Fields, ContainerField{memOffset: field.Offset, ssz: fieldSSZ, name: field.Name})
 	}
@@ -60,12 +70,20 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 	return res, nil
 }
 
-func (v *SSZContainer) FuzzReqLen() uint64 {
-	return v.fuzzReqLen
+func (v *SSZContainer) FuzzMinLen() uint64 {
+	return v.fuzzMinLen
+}
+
+func (v *SSZContainer) FuzzMaxLen() uint64 {
+	return v.fuzzMaxLen
 }
 
 func (v *SSZContainer) MinLen() uint64 {
 	return v.minLen
+}
+
+func (v *SSZContainer) MaxLen() uint64 {
+	return v.maxLen
 }
 
 func (v *SSZContainer) FixedLen() uint64 {
@@ -113,10 +131,10 @@ func (v *SSZContainer) decodeFixedSize(dr *DecodingReader, p unsafe.Pointer) err
 }
 
 func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
-	lengthLeftOver := v.fuzzReqLen
+	lengthLeftOver := v.fuzzMinLen
 
 	for _, f := range v.Fields {
-		lengthLeftOver -= f.ssz.FuzzReqLen()
+		lengthLeftOver -= f.ssz.FuzzMinLen()
 		span := dr.GetBytesSpan()
 		if span < lengthLeftOver {
 			return fmt.Errorf("under estimated length requirements for fuzzing input, not enough data available to fuzz")

@@ -29,15 +29,23 @@ func NewSSZBytes(typ reflect.Type) (*SSZBytes, error) {
 	return &SSZBytes{limit: limit}, nil
 }
 
-func (v *SSZBytes) FuzzReqLen() uint64 {
+func (v *SSZBytes) FuzzMinLen() uint64 {
 	return 8
 }
 
-func (v *SSZBytes) FixedLen() uint64 {
-	return 0
+func (v *SSZBytes) FuzzMaxLen() uint64 {
+	return 8 + v.limit
 }
 
 func (v *SSZBytes) MinLen() uint64 {
+	return 0
+}
+
+func (v *SSZBytes) MaxLen() uint64 {
+	return v.limit
+}
+
+func (v *SSZBytes) FixedLen() uint64 {
 	return 0
 }
 

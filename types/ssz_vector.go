@@ -17,7 +17,9 @@ type SSZVector struct {
 	isFixedLen  bool
 	fixedLen    uint64
 	minLen      uint64
-	fuzzReqLen  uint64
+	maxLen      uint64
+	fuzzMinLen  uint64
+	fuzzMaxLen  uint64
 }
 
 func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
@@ -31,13 +33,19 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 	if err != nil {
 		return nil, err
 	}
-	var fixedElemLen, minElemLen uint64
+	var fixedElemLen, minElemLen, maxElemLen uint64
 	if elemSSZ.IsFixed() {
 		fixedElemLen = elemSSZ.FixedLen()
 		minElemLen = elemSSZ.MinLen()
+		maxElemLen = elemSSZ.MaxLen()
+		if fixedElemLen != minElemLen || fixedElemLen != maxElemLen {
+			return nil, fmt.Errorf("fixed-size element vector has invalid element min/max length:" +
+				" fixed: %d min: %d max: %d ", fixedElemLen, minElemLen, maxElemLen)
+		}
 	} else {
-		fixedElemLen = uint64(BYTES_PER_LENGTH_OFFSET)
-		minElemLen = uint64(BYTES_PER_LENGTH_OFFSET) + elemSSZ.MinLen()
+		fixedElemLen = BYTES_PER_LENGTH_OFFSET
+		minElemLen = BYTES_PER_LENGTH_OFFSET + elemSSZ.MinLen()
+		maxElemLen = BYTES_PER_LENGTH_OFFSET + elemSSZ.MaxLen()
 	}
 	res := &SSZVector{
 		length:      length,
@@ -46,17 +54,27 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 		isFixedLen:  elemSSZ.IsFixed(),
 		fixedLen:    fixedElemLen * length,
 		minLen:      minElemLen * length,
-		fuzzReqLen:  elemSSZ.FuzzReqLen() * length,
+		maxLen:      maxElemLen * length,
+		fuzzMinLen:  elemSSZ.FuzzMinLen() * length,
+		fuzzMaxLen:  elemSSZ.FuzzMaxLen() * length,
 	}
 	return res, nil
 }
 
-func (v *SSZVector) FuzzReqLen() uint64 {
-	return v.fuzzReqLen
+func (v *SSZVector) FuzzMinLen() uint64 {
+	return v.fuzzMinLen
+}
+
+func (v *SSZVector) FuzzMaxLen() uint64 {
+	return v.fuzzMaxLen
 }
 
 func (v *SSZVector) MinLen() uint64 {
 	return v.minLen
+}
+
+func (v *SSZVector) MaxLen() uint64 {
+	return v.maxLen
 }
 
 func (v *SSZVector) FixedLen() uint64 {
