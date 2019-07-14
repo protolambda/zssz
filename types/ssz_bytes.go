@@ -59,6 +59,9 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 			return err
 		}
 		span := dr.GetBytesSpan()
+		if span > v.limit {
+			span = v.limit
+		}
 		if span != 0 {
 			length = x % span
 		}

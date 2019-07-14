@@ -81,6 +81,9 @@ func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) erro
 		return err
 	}
 	span := dr.GetBytesSpan()
+	if byteLimit := v.limit * v.elemSSZ.FuzzReqLen(); byteLimit > span {
+		span = byteLimit
+	}
 	if span == 0 {
 		return nil
 	}

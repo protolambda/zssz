@@ -73,12 +73,12 @@ func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
 		return err
 	}
 	span := dr.GetBytesSpan()
+	if byteLimit := v.limit * v.elemSSZ.FuzzReqLen(); span > byteLimit {
+		span = byteLimit
+	}
 	length := uint64(0)
 	if span != 0 {
 		length = (x % span) / v.elemSSZ.FuzzReqLen()
-	}
-	if !v.elemSSZ.IsFixed() {
-		length /= 10
 	}
 	contentsPtr := v.alloc(p, length)
 	if v.elemSSZ.IsFixed() {

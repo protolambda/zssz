@@ -14,6 +14,7 @@ import (
 
 type SSZBitlist struct {
 	bitLimit  uint64
+	byteLimit uint64
 	leafLimit uint64
 }
 
@@ -30,7 +31,12 @@ func NewSSZBitlist(typ reflect.Type) (*SSZBitlist, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := &SSZBitlist{bitLimit: bitLimit, leafLimit: (((bitLimit + 7) >> 3) + 31) >> 5}
+	byteLimit := ((bitLimit + 1) + 7) >> 3
+	res := &SSZBitlist{
+		bitLimit: bitLimit,
+		byteLimit: byteLimit,
+		leafLimit: (byteLimit + 31) >> 5,
+	}
 	return res, nil
 }
 
@@ -68,7 +74,12 @@ func (v *SSZBitlist) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		if err != nil {
 			return err
 		}
+		// get span to fill with available space
 		span := dr.GetBytesSpan() - 1
+		// respect type limit
+		if span > v.byteLimit {
+			span = v.byteLimit
+		}
 		if span != 0 {
 			byteLen = x % span
 		}
@@ -78,8 +89,8 @@ func (v *SSZBitlist) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		byteLen = dr.Max() - dr.Index()
 	}
 	// there may not be more bytes than necessary for the N bits, +1 for the delimiting bit.
-	if byteLimit := ((v.bitLimit + 1) + 7) >> 3; byteLen > byteLimit {
-		return fmt.Errorf("got %d bytes, expected no more than %d bytes to represent bitlist", byteLen, byteLimit)
+	if byteLen > v.byteLimit {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes for bitlist", byteLen, v.byteLimit)
 	}
 	ptrutil.BytesAllocFn(p, byteLen)
 	data := *(*[]byte)(p)
