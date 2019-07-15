@@ -31,31 +31,26 @@ func EncodeVarSeries(encFn EncoderFn, length uint64, elemMemSize uintptr, eb *En
 
 // pointer must point to start of the series contents
 func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint64, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
-	length := uint64(len(offsets))
-	var currentOffset uint64
 	memOffset := uintptr(0)
-	for i := uint64(0); i < length; {
+	for i := 0; i < len(offsets); i++ {
 		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
 		memOffset += elemMemSize
-		// scope: until next offset, or end if this is the last item.
-		currentOffset = dr.Index()
+		currentOffset := dr.Index()
 		if currentOffset != offsets[i] {
 			return fmt.Errorf("expected to read to data %d bytes, got to %d", offsets[i], currentOffset)
 		}
-		// go to next offset
-		i++
 		// calculate the scope based on next offset, and max. value of this scope for the last value
-		var count uint64
-		if i < length {
-			if offset := offsets[i]; offset < currentOffset {
-				return fmt.Errorf("offset %d is invalid", i)
+		var scope uint64
+		if next := i + 1; next < len(offsets) {
+			if nextOffset := offsets[next]; nextOffset > currentOffset {
+				scope = nextOffset - currentOffset
 			} else {
-				count = offset - currentOffset
+				return fmt.Errorf("offset %d is invalid", i)
 			}
 		} else {
-			count = dr.Max() - currentOffset
+			scope = dr.Max() - currentOffset
 		}
-		scoped, err := dr.Scope(count)
+		scoped, err := dr.Scope(scope)
 		if err != nil {
 			return err
 		}

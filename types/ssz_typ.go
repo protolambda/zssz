@@ -30,6 +30,7 @@ type SSZ interface {
 	Encode(eb *EncodingBuffer, p unsafe.Pointer)
 	// Reads from input, populates object with read data
 	Decode(dr *DecodingReader, p unsafe.Pointer) error
+	// Hashes the object read at the given pointer
 	HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte
 }
 

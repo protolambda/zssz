@@ -19,6 +19,7 @@ Features:
 - Bitfields/Bitlists are compatible with byte arrays, and not unpacked into boolean arrays.
 - Stable merkleization, using the v0.8 limit-based merkleization depth for lists.
 - Construction of SSZ types can also be used to support encoding of dynamic types
+- Support for struct embedding & squashing.
 - No dependencies other than the standard Go libs.
     - Zero-hashes are pre-computed with the `sha256` package,
        but you can supply a more efficient version to run hash-tree-root with. 
@@ -33,7 +34,8 @@ Features:
 Supported types
 - small basic-types (`bool`, `uint8`, `uint16`, `uint32`, `uint64`)
 - containers
-  - incl. optimizations for fixed-size only elements
+  - squash non-pointer struct-fields with a tag `ssz:"squash"`, or embed the struct.
+    Note: just like field names must be public, embedded structs must be a public type. 
 - vector
   - `Vector`, optimized for fixed and variable size elements
   - `BasicVector`, optimized for basic element types
@@ -47,6 +49,7 @@ Supported types
 
 Possibly supported in future:
 - union/null
+- embedding of pointer structs (suggestions for nil-semantics welcome)
 - uint128/uint256
 - strings
 - partials

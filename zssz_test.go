@@ -33,23 +33,23 @@ type fixedTestStruct struct {
 
 type uint16List128 []uint16
 
-func (li *uint16List128) Limit() uint32 {
+func (li *uint16List128) Limit() uint64 {
 	return 128
 }
 
 type uint16List1024 []uint16
 
-func (li *uint16List1024) Limit() uint32 {
+func (li *uint16List1024) Limit() uint64 {
 	return 1024
 }
 
 type bytelist256 []byte
 
-func (li *bytelist256) Limit() uint32 {
+func (li *bytelist256) Limit() uint64 {
 	return 256
 }
 
-type varTestStruct struct {
+type VarTestStruct struct {
 	A uint16
 	B uint16List1024
 	C uint8
@@ -60,9 +60,38 @@ type complexTestStruct struct {
 	B uint16List128
 	C uint8
 	D bytelist256
-	E varTestStruct
+	E VarTestStruct
 	F [4]fixedTestStruct
-	G [2]varTestStruct
+	G [2]VarTestStruct
+}
+
+type embeddingStruct struct {
+	A VarTestStruct
+	VarTestStruct // squash field by embedding (must be a public type)
+	B   uint16
+	Foo smallTestStruct `ssz:"squash"` // Squash field explicitly
+}
+
+type Squash1 struct {
+	A uint8
+	D *uint32 `ssz:"omit"`
+	B uint64
+	C uint32
+}
+
+type Squash2 struct {
+	D uint32
+	E uint8 `ssz:"omit"`
+	Squash1
+	More Squash1 `ssz:"squash"`
+}
+
+type Squash3 struct {
+	Foo Squash1 `ssz:"squash"`
+	Squash1
+	X   Squash2 `ssz:"squash"`
+	Bar Squash1 `ssz:"squash"`
+	Squash2
 }
 
 func chunk(v string) string {
@@ -323,12 +352,12 @@ func init() {
 		},
 		{"fixedTestStruct", fixedTestStruct{A: 0xab, B: 0xaabbccdd00112233, C: 0x12345678}, "ab33221100ddccbbaa78563412",
 			h(h(chunk("ab"), chunk("33221100ddccbbaa")), h(chunk("78563412"), chunk(""))), getTyp((*fixedTestStruct)(nil))},
-		{"varTestStruct nil", varTestStruct{A: 0xabcd, B: nil, C: 0xff}, "cdab07000000ff",
+		{"VarTestStruct nil", VarTestStruct{A: 0xabcd, B: nil, C: 0xff}, "cdab07000000ff",
 			// log2(1024*2/32)= 6 deep
-			h(h(chunk("cdab"), h(zeroHashes[6], chunk("00000000"))), h(chunk("ff"), chunk(""))), getTyp((*varTestStruct)(nil))},
-		{"varTestStruct empty", varTestStruct{A: 0xabcd, B: make([]uint16, 0), C: 0xff}, "cdab07000000ff",
-			h(h(chunk("cdab"), h(zeroHashes[6], chunk("00000000"))), h(chunk("ff"), chunk(""))), getTyp((*varTestStruct)(nil))},
-		{"varTestStruct some", varTestStruct{A: 0xabcd, B: []uint16{1, 2, 3}, C: 0xff}, "cdab07000000ff010002000300",
+			h(h(chunk("cdab"), h(zeroHashes[6], chunk("00000000"))), h(chunk("ff"), chunk(""))), getTyp((*VarTestStruct)(nil))},
+		{"VarTestStruct empty", VarTestStruct{A: 0xabcd, B: make([]uint16, 0), C: 0xff}, "cdab07000000ff",
+			h(h(chunk("cdab"), h(zeroHashes[6], chunk("00000000"))), h(chunk("ff"), chunk(""))), getTyp((*VarTestStruct)(nil))},
+		{"VarTestStruct some", VarTestStruct{A: 0xabcd, B: []uint16{1, 2, 3}, C: 0xff}, "cdab07000000ff010002000300",
 			h(
 				h(
 					chunk("cdab"),
@@ -342,22 +371,23 @@ func init() {
 				),
 				h(chunk("ff"), chunk("")),
 			),
-			getTyp((*varTestStruct)(nil))},
-		{"complexTestStruct", complexTestStruct{
-			A: 0xaabb,
-			B: uint16List128{0x1122, 0x3344},
-			C: 0xff,
-			D: bytelist256("foobar"),
-			E: varTestStruct{A: 0xabcd, B: uint16List1024{1, 2, 3}, C: 0xff},
-			F: [4]fixedTestStruct{
-				{0xcc, 0x4242424242424242, 0x13371337},
-				{0xdd, 0x3333333333333333, 0xabcdabcd},
-				{0xee, 0x4444444444444444, 0x00112233},
-				{0xff, 0x5555555555555555, 0x44556677}},
-			G: [2]varTestStruct{
-				{A: 0xdead, B: []uint16{1, 2, 3}, C: 0x11},
-				{A: 0xbeef, B: []uint16{4, 5, 6}, C: 0x22}},
-		},
+			getTyp((*VarTestStruct)(nil))},
+		{"complexTestStruct",
+			complexTestStruct{
+				A: 0xaabb,
+				B: uint16List128{0x1122, 0x3344},
+				C: 0xff,
+				D: bytelist256("foobar"),
+				E: VarTestStruct{A: 0xabcd, B: uint16List1024{1, 2, 3}, C: 0xff},
+				F: [4]fixedTestStruct{
+					{0xcc, 0x4242424242424242, 0x13371337},
+					{0xdd, 0x3333333333333333, 0xabcdabcd},
+					{0xee, 0x4444444444444444, 0x00112233},
+					{0xff, 0x5555555555555555, 0x44556677}},
+				G: [2]VarTestStruct{
+					{A: 0xdead, B: []uint16{1, 2, 3}, C: 0x11},
+					{A: 0xbeef, B: []uint16{4, 5, 6}, C: 0x22}},
+			},
 			"bbaa" +
 				"47000000" + // offset of B, []uint16
 				"ff" +
@@ -371,7 +401,7 @@ func init() {
 				"22114433" + // contents of B
 				"666f6f626172" + // foobar
 				"cdab07000000ff010002000300" + // contents of E
-				"08000000" + "15000000" + // [start G]: local offsets of [2]varTestStruct
+				"08000000" + "15000000" + // [start G]: local offsets of [2]VarTestStruct
 				"adde0700000011010002000300" +
 				"efbe0700000022040005000600",
 			h(
@@ -412,6 +442,96 @@ func init() {
 				),
 			),
 			getTyp((*complexTestStruct)(nil))},
+		{"embeddingStruct",
+			embeddingStruct{
+				A:             VarTestStruct{A: 0xabcd, B: uint16List1024{1, 2, 3}, C: 0xff},
+				VarTestStruct: VarTestStruct{A: 0xeeff, B: uint16List1024{4, 5, 6, 7, 8}, C: 0xaa},
+				B:             0x1234,
+				Foo: smallTestStruct{
+					A: 0x4567,
+					B: 0x8901,
+				},
+			},
+			"11000000" + // offset to dynamic part A
+				"ffee" + "1e000000" + "aa" + // embedded VarTestStruct, fixed part
+				"3412" + // B
+				"6745" + "0189" + // embedded smallTestStruct
+				"cdab07000000ff010002000300" + // A, contents
+				"04000500060007000800", // embedded VarTestStruct, dynamic part
+			h(
+				h(
+					h(
+						// A
+						h(
+							h(chunk("cdab"), h(merge(chunk("010002000300"), zeroHashes[0:6]), chunk("03000000"))),
+							h(chunk("ff"), chunk("")),
+						),
+						// embedded
+						chunk("ffee"),
+					),
+					h(
+						// embedded continued
+						h(merge(chunk("04000500060007000800"), zeroHashes[0:6]), chunk("05000000")),
+						chunk("aa"),
+					),
+				),
+				h(
+					h(
+						chunk("3412"), // B
+						chunk("6745"), // embedded smallTestStruct
+					),
+					h(
+						chunk("0189"), // embedded continued
+						chunk(""),
+					),
+				),
+			),
+			getTyp((*embeddingStruct)(nil))},
+		{"squash chaos", Squash3{
+			Foo:     Squash1{01, nil, 0xa8a7a6a5a4a3a2a1, 0xaabbccdd},
+			Squash1: Squash1{02, nil, 0xb8b7b6b5b4b3b2b1, 0x00001111},
+			X: Squash2{
+				D:       0x11223344,
+				E:       0, // omitted
+				Squash1: Squash1{03, nil, 0xc8c7c6c5c4c3c2c1, 0x22223333},
+				More:    Squash1{04, nil, 0xd8d7d6d5d4d3d2d1, 0x42424242},
+			},
+			Bar: Squash1{0xab, nil, 0x1000000000000001, 0x12341234},
+			Squash2: Squash2{
+				D:       0x12345678,
+				E:       0, // omitted
+				Squash1: Squash1{05, nil, 0xe8e7e6e5e4e3e2e1, 0x55665566},
+				More:    Squash1{06, nil, 0xf8f7f6f5f4f3f2f1, 0x78787878},
+			},
+		}, "01" + "a1a2a3a4a5a6a7a8" + "ddccbbaa" +
+			"02" + "b1b2b3b4b5b6b7b8" + "11110000" +
+			"44332211" +
+			"03" + "c1c2c3c4c5c6c7c8" + "33332222" +
+			"04" + "d1d2d3d4d5d6d7d8" + "42424242" +
+			"ab" + "0100000000000010" + "34123412" +
+			"78563412" +
+			"05" + "e1e2e3e4e5e6e7e8" + "66556655" +
+			"06" + "f1f2f3f4f5f6f7f8" + "78787878",
+			h(
+				h(
+					h(
+						h(h(chunk("01"), chunk("a1a2a3a4a5a6a7a8")), h(chunk("ddccbbaa"), chunk("02"))),
+						h(h(chunk("b1b2b3b4b5b6b7b8"), chunk("11110000")), h(chunk("44332211"), chunk("03"))),
+					),
+					h(
+						h(h(chunk("c1c2c3c4c5c6c7c8"), chunk("33332222")), h(chunk("04"), chunk("d1d2d3d4d5d6d7d8"))),
+						h(h(chunk("42424242"), chunk("ab")), h(chunk("0100000000000010"), chunk("34123412"))),
+					),
+				),
+				h(
+					h(
+						h(h(chunk("78563412"), chunk("05")), h(chunk("e1e2e3e4e5e6e7e8"), chunk("66556655"))),
+						h(h(chunk("06"), chunk("f1f2f3f4f5f6f7f8")), h(chunk("78787878"), chunk(""))),
+					),
+					zeroHashes[3],
+				),
+			),
+			getTyp((*Squash3)(nil))},
 	}
 }
 

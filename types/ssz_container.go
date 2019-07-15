@@ -13,11 +13,39 @@ import (
 
 const SSZ_TAG = "ssz"
 const OMIT_FLAG = "omit"
+const SQUASH_FLAG = "squash"
+
+type FieldPtrFn func(p unsafe.Pointer) unsafe.Pointer
+
+func (fn FieldPtrFn) WrapOffset(memOffset uintptr) FieldPtrFn {
+	return func(p unsafe.Pointer) unsafe.Pointer {
+		return fn(unsafe.Pointer(uintptr(p) + memOffset))
+	}
+}
 
 type ContainerField struct {
-	memOffset uintptr
-	ssz       SSZ
-	name      string
+	ssz   SSZ
+	name  string
+	ptrFn FieldPtrFn
+}
+
+func (c *ContainerField) Wrap(name string, memOffset uintptr) ContainerField {
+	return ContainerField{
+		ssz: c.ssz,
+		name: name + ">" + c.name,
+		ptrFn: c.ptrFn.WrapOffset(memOffset),
+	}
+}
+
+type SquashableFields interface {
+	// Get the ContainerFields
+	SquashFields() []ContainerField
+}
+
+func GetOffsetPtrFn(memOffset uintptr) FieldPtrFn {
+	return func(p unsafe.Pointer) unsafe.Pointer {
+		return unsafe.Pointer(uintptr(p) + memOffset)
+	}
 }
 
 type SSZContainer struct {
@@ -26,9 +54,45 @@ type SSZContainer struct {
 	fixedLen    uint64
 	minLen      uint64
 	maxLen      uint64
-	offsetCount uint64
+	offsetCount uint64 // includes offsets for fields that are squashed in
 	fuzzMinLen  uint64
 	fuzzMaxLen  uint64
+}
+
+func (v *SSZContainer) SquashFields() []ContainerField {
+	return v.Fields
+}
+
+// Get the container fields for the given struct field
+// 0 fields (nil) if struct field is ignored
+// 1 field for normal struct fields
+// 0 or more fields when a struct field is squashed (recursively adding to the total field collection)
+func getFields(factory SSZFactoryFn, f *reflect.StructField) (out []ContainerField, err error) {
+	if tags.HasFlag(f, SSZ_TAG, OMIT_FLAG) {
+		return nil, nil
+	}
+	fieldSSZ, err := factory(f.Type)
+	if err != nil {
+		return nil, err
+	}
+
+	forceSquash := tags.HasFlag(f, SSZ_TAG, SQUASH_FLAG)
+
+	if f.Anonymous || forceSquash {
+		if squashable, ok := fieldSSZ.(SquashableFields); ok {
+			for _, sq := range squashable.SquashFields() {
+				out = append(out, sq.Wrap(f.Name, f.Offset))
+			}
+			return out, nil
+		}
+		// anonymous fields can be handled as normal fields. Only error when it was tagged to be squashed.
+		if forceSquash {
+			return nil, fmt.Errorf("could not squash field %s", f.Name)
+		}
+	}
+
+	out = append(out, ContainerField{ssz: fieldSSZ, name: f.Name, ptrFn: GetOffsetPtrFn(f.Offset)})
+	return
 }
 
 func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, error) {
@@ -36,35 +100,33 @@ func NewSSZContainer(factory SSZFactoryFn, typ reflect.Type) (*SSZContainer, err
 		return nil, fmt.Errorf("typ is not a struct")
 	}
 	res := new(SSZContainer)
-	count := typ.NumField()
-	for i := 0; i < count; i++ {
-		field := typ.Field(i)
-		if tags.HasFlag(&field, SSZ_TAG, OMIT_FLAG) {
-			continue
-		}
-		fieldSSZ, err := factory(field.Type)
+	for i, c := 0, typ.NumField(); i < c; i++ {
+		// get the Go struct field
+		sField := typ.Field(i)
+		// For this field, get the SSZ field(s). There may be more if the Go field is squashed.
+		fields, err := getFields(factory, &sField)
 		if err != nil {
 			return nil, err
 		}
-		if fieldSSZ.IsFixed() {
-			fixed, min, max := fieldSSZ.FixedLen(), fieldSSZ.MinLen(), fieldSSZ.MaxLen()
+		res.Fields = append(res.Fields, fields...)
+	}
+	for _, field := range res.Fields {
+		if field.ssz.IsFixed() {
+			fixed, min, max := field.ssz.FixedLen(), field.ssz.MinLen(), field.ssz.MaxLen()
 			if fixed != min || fixed != max {
-				return nil,
-					fmt.Errorf("fixed-size field %d ('%s') in struct has invalid min/max length", i, field.Name)
+				return nil, fmt.Errorf("fixed-size field ('%s') in struct has invalid min/max length", field.name)
 			}
 			res.fixedLen += fixed
 			res.minLen += fixed
 			res.maxLen += fixed
 		} else {
 			res.fixedLen += BYTES_PER_LENGTH_OFFSET
-			res.minLen += BYTES_PER_LENGTH_OFFSET + fieldSSZ.MinLen()
-			res.maxLen += BYTES_PER_LENGTH_OFFSET + fieldSSZ.MaxLen()
+			res.minLen += BYTES_PER_LENGTH_OFFSET + field.ssz.MinLen()
+			res.maxLen += BYTES_PER_LENGTH_OFFSET + field.ssz.MaxLen()
 			res.offsetCount++
 		}
-		res.fuzzMinLen += fieldSSZ.FuzzMinLen()
-		res.fuzzMaxLen += fieldSSZ.FuzzMaxLen()
-
-		res.Fields = append(res.Fields, ContainerField{memOffset: field.Offset, ssz: fieldSSZ, name: field.Name})
+		res.fuzzMinLen += field.ssz.FuzzMinLen()
+		res.fuzzMaxLen += field.ssz.FuzzMaxLen()
 	}
 	res.isFixedLen = res.offsetCount == 0
 	return res, nil
@@ -97,14 +159,14 @@ func (v *SSZContainer) IsFixed() bool {
 func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	for _, f := range v.Fields {
 		if f.ssz.IsFixed() {
-			f.ssz.Encode(eb, unsafe.Pointer(uintptr(p)+f.memOffset))
+			f.ssz.Encode(eb, f.ptrFn(p))
 		} else {
 			// write an offset to the fixed data, to find the dynamic data with as a reader
 			eb.WriteOffset(v.fixedLen)
 
 			// encode the dynamic data to a temporary buffer
 			temp := GetPooledBuffer()
-			f.ssz.Encode(temp, unsafe.Pointer(uintptr(p)+f.memOffset))
+			f.ssz.Encode(temp, f.ptrFn(p))
 			// write it forward
 			eb.WriteForward(temp)
 
@@ -117,17 +179,6 @@ func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 		// All the dynamic data is appended to the fixed data
 		eb.FlushForward()
 	}
-}
-
-func (v *SSZContainer) decodeFixedSize(dr *DecodingReader, p unsafe.Pointer) error {
-	for _, f := range v.Fields {
-		// If the container is fixed length, all fields are.
-		// No need to redefine the scope for fixed-length SSZ objects.
-		if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
@@ -146,7 +197,7 @@ func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointe
 			return err
 		}
 		scoped.EnableFuzzMode()
-		if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
+		if err := f.ssz.Decode(scoped, f.ptrFn(p)); err != nil {
 			return err
 		}
 		dr.UpdateIndexFromScoped(scoped)
@@ -154,7 +205,51 @@ func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointe
 	return nil
 }
 
-func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error {
+func decodeOffsetElem(dr *DecodingReader, elemPtr unsafe.Pointer, decFn DecoderFn, expectedOffset uint64, scope uint64) error {
+	currentOffset := dr.Index()
+	if expectedOffset != currentOffset {
+		return fmt.Errorf("expected to be at %d bytes, but currently at %d", expectedOffset, currentOffset)
+	}
+	scoped, err := dr.Scope(scope)
+	if err != nil {
+		return err
+	}
+	if err := decFn(scoped, elemPtr); err != nil {
+		return err
+	}
+	dr.UpdateIndexFromScoped(scoped)
+	return nil
+}
+
+func (v *SSZContainer) decodeDynamicPart(dr *DecodingReader, p unsafe.Pointer, offsets []uint64) error {
+	i := 0
+	for _, f := range v.Fields {
+		// ignore fixed-size fields
+		if f.ssz.IsFixed() {
+			continue
+		}
+		// calculate the scope based on next offset, and max. value of this scope for the last value
+		var scope uint64
+		currentOffset := offsets[i]
+		if next := i + 1; next < len(offsets) {
+			if nextOffset := offsets[next]; nextOffset > currentOffset {
+				scope = nextOffset - currentOffset
+			} else {
+				return fmt.Errorf("offset %d for field %s is invalid", i, f.name)
+			}
+		} else {
+			scope = dr.Max() - currentOffset
+		}
+		if err := decodeOffsetElem(dr, f.ptrFn(p), f.ssz.Decode, offsets[i], scope); err != nil {
+			return err
+		}
+		// go to next offset
+		i++
+	}
+	return nil
+}
+
+func (v *SSZContainer) decodeFixedPart(dr *DecodingReader, p unsafe.Pointer) ([]uint64, error) {
 	// technically we could also ignore offset correctness and skip ahead,
 	//  but we may want to enforce proper offsets.
 	offsets := make([]uint64, 0, v.offsetCount)
@@ -164,64 +259,40 @@ func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error
 		if f.ssz.IsFixed() {
 			fixedI += f.ssz.FixedLen()
 			// No need to redefine the scope for fixed-length SSZ objects.
-			if err := f.ssz.Decode(dr, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
-				return err
+			if err := f.ssz.Decode(dr, f.ptrFn(p)); err != nil {
+				return nil, err
 			}
 		} else {
 			fixedI += BYTES_PER_LENGTH_OFFSET
 			// write an offset to the fixed data, to find the dynamic data with as a reader
 			offset, err := dr.ReadOffset()
 			if err != nil {
-				return err
+				return nil, err
 			}
 			offsets = append(offsets, offset)
 		}
 		if i := dr.Index(); i != fixedI {
-			return fmt.Errorf("fixed part had different size than expected, now at %d, expected to be at %d", i, fixedI)
+			return nil, fmt.Errorf("fixed part had different size than expected, now at %d, expected to be at %d", i, fixedI)
 		}
 	}
 	pivotIndex := dr.Index()
 	if expectedIndex := v.fixedLen + startIndex; pivotIndex != expectedIndex {
-		return fmt.Errorf("expected to read to %d bytes for fixed part of container, got to %d", expectedIndex, pivotIndex)
+		return nil, fmt.Errorf("expected to read to %d bytes for fixed part of container, got to %d", expectedIndex, pivotIndex)
 	}
-	var currentOffset uint64
-	i := 0
-	for _, f := range v.Fields {
-		if !f.ssz.IsFixed() {
-			currentOffset = dr.Index()
-			if offsets[i] != currentOffset {
-				return fmt.Errorf("expected to read to %d bytes, got to %d", offsets[i], currentOffset)
-			}
-			// go to next offset
-			i++
-			// calculate the scope based on next offset, and max. value of this scope for the last value
-			var count uint64
-			if i < len(offsets) {
-				if offset := offsets[i]; offset < currentOffset {
-					return fmt.Errorf("offset %d is invalid", i)
-				} else {
-					count = offset - currentOffset
-				}
-			} else {
-				count = dr.Max() - currentOffset
-			}
-			scoped, err := dr.Scope(count)
-			if err != nil {
-				return err
-			}
-			if err := f.ssz.Decode(scoped, unsafe.Pointer(uintptr(p)+f.memOffset)); err != nil {
-				return err
-			}
-			dr.UpdateIndexFromScoped(scoped)
-		}
+	return offsets, nil
+}
+
+func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error {
+	offsets, err := v.decodeFixedPart(dr, p)
+	if err != nil {
+		return err
 	}
-	return nil
+	// not really squashed, but now that we have the offsets, we can decode it like this.
+	return v.decodeDynamicPart(dr, p, offsets)
 }
 
 func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	if v.IsFixed() {
-		return v.decodeFixedSize(dr, p)
-	} else if dr.IsFuzzMode() {
+	if dr.IsFuzzMode() {
 		return v.decodeVarSizeFuzzmode(dr, p)
 	} else {
 		return v.decodeVarSize(dr, p)
@@ -231,7 +302,7 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZContainer) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	leaf := func(i uint64) []byte {
 		f := v.Fields[i]
-		r := f.ssz.HashTreeRoot(h, unsafe.Pointer(uintptr(p)+f.memOffset))
+		r := f.ssz.HashTreeRoot(h, f.ptrFn(p))
 		return r[:]
 	}
 	leafCount := uint64(len(v.Fields))
@@ -241,7 +312,7 @@ func (v *SSZContainer) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 func (v *SSZContainer) SigningRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	leaf := func(i uint64) []byte {
 		f := v.Fields[i]
-		r := f.ssz.HashTreeRoot(h, unsafe.Pointer(uintptr(p)+f.memOffset))
+		r := f.ssz.HashTreeRoot(h, f.ptrFn(p))
 		return r[:]
 	}
 	// truncate last field
