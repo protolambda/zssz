@@ -14,8 +14,8 @@ import (
 
 type SSZBitlist struct {
 	bitLimit  uint64
-	byteLimit uint64
-	leafLimit uint64
+	byteLimit uint64 // exclusive delimiting bit
+	leafLimit uint64 // exclusive delimiting bit
 }
 
 var bitlistMeta = reflect.TypeOf((*bitfields.BitlistMeta)(nil)).Elem()
@@ -31,7 +31,7 @@ func NewSSZBitlist(typ reflect.Type) (*SSZBitlist, error) {
 	if err != nil {
 		return nil, err
 	}
-	byteLimit := ((bitLimit + 1) + 7) >> 3
+	byteLimit := (bitLimit + 7) >> 3
 	res := &SSZBitlist{
 		bitLimit: bitLimit,
 		byteLimit: byteLimit,
@@ -129,11 +129,12 @@ func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		if e > byteLen {
 			x := [32]byte{}
 			copy(x[:], data[s:byteLen])
-			if bitLen&7 != 0 { // if we not already cut off the delimiting bit with a bytes boundary
+			if bitLen&7 != 0 && byteLen != 0 { // if we not already cut off the delimiting bit with a bytes boundary
 				// find the index of the length-determining 1 bit (bitlist length == index of this bit)
-				last := x[:byteLen&31]
-				bitLen := bitfields.BitlistLen(last)
-				bitfields.SetBit(last, bitLen, false) // zero out the length bit.
+				delimitByteIndex := (byteLen-1)&31
+				mask := ^(byte(1) << bitfields.BitIndex(x[delimitByteIndex]))
+				// zero out the length bit.
+				x[delimitByteIndex] &= mask
 			}
 			return x[:]
 		}
