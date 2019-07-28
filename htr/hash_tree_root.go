@@ -10,13 +10,16 @@ type HashTreeRootFn func(hfn HashFn, pointer unsafe.Pointer) [32]byte
 
 type HashFn func(input []byte) [32]byte
 
+// Excluding the full zero bytes32 itself
+const zeroHashesLevels = 64
+
 var ZeroHashes [][32]byte
 
 // initialize the zero-hashes pre-computed data with the given hash-function.
 func InitZeroHashes(hFn HashFn) {
-	ZeroHashes = make([][32]byte, 32)
+	ZeroHashes = make([][32]byte, zeroHashesLevels + 1)
 	v := [64]byte{}
-	for i := 0; i < 31; i++ {
+	for i := 0; i < zeroHashesLevels; i++ {
 		copy(v[:32], ZeroHashes[i][:])
 		copy(v[32:], ZeroHashes[i][:])
 		ZeroHashes[i+1] = hFn(v[:])
