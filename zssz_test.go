@@ -66,10 +66,10 @@ type complexTestStruct struct {
 }
 
 type embeddingStruct struct {
-	A VarTestStruct
+	A             VarTestStruct
 	VarTestStruct // squash field by embedding (must be a public type)
-	B   uint16
-	Foo smallTestStruct `ssz:"squash"` // Squash field explicitly
+	B             uint16
+	Foo           smallTestStruct `ssz:"squash"` // Squash field explicitly
 }
 
 type Squash1 struct {
