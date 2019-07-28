@@ -31,8 +31,8 @@ type ContainerField struct {
 
 func (c *ContainerField) Wrap(name string, memOffset uintptr) ContainerField {
 	return ContainerField{
-		ssz: c.ssz,
-		name: name + ">" + c.name,
+		ssz:   c.ssz,
+		name:  name + ">" + c.name,
 		ptrFn: c.ptrFn.WrapOffset(memOffset),
 	}
 }
