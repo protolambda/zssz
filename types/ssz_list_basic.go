@@ -12,10 +12,10 @@ import (
 )
 
 type SSZBasicList struct {
-	alloc    ptrutil.SliceAllocationFn
-	elemKind reflect.Kind
-	elemSSZ  *SSZBasic
-	limit    uint64
+	alloc     ptrutil.SliceAllocationFn
+	elemKind  reflect.Kind
+	elemSSZ   *SSZBasic
+	limit     uint64
 	byteLimit uint64
 }
 
@@ -39,10 +39,10 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	}
 
 	res := &SSZBasicList{
-		alloc:    ptrutil.MakeSliceAllocFn(typ),
-		elemKind: elemKind,
-		elemSSZ:  elemSSZ,
-		limit:    limit,
+		alloc:     ptrutil.MakeSliceAllocFn(typ),
+		elemKind:  elemKind,
+		elemSSZ:   elemSSZ,
+		limit:     limit,
 		byteLimit: limit * elemSSZ.Length,
 	}
 	return res, nil

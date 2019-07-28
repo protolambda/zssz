@@ -33,7 +33,7 @@ func NewSSZBitlist(typ reflect.Type) (*SSZBitlist, error) {
 	}
 	byteLimit := (bitLimit + 7) >> 3
 	res := &SSZBitlist{
-		bitLimit: bitLimit,
+		bitLimit:  bitLimit,
 		byteLimit: byteLimit,
 		leafLimit: (byteLimit + 31) >> 5,
 	}
@@ -69,7 +69,7 @@ func (v *SSZBitlist) FixedLen() uint64 {
 }
 
 func (v *SSZBitlist) IsFixed() bool {
-	return true
+	return false
 }
 
 func (v *SSZBitlist) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
@@ -131,7 +131,7 @@ func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 			copy(x[:], data[s:byteLen])
 			if bitLen&7 != 0 && byteLen != 0 { // if we not already cut off the delimiting bit with a bytes boundary
 				// find the index of the length-determining 1 bit (bitlist length == index of this bit)
-				delimitByteIndex := (byteLen-1)&31
+				delimitByteIndex := (byteLen - 1) & 31
 				mask := ^(byte(1) << bitfields.BitIndex(x[delimitByteIndex]))
 				// zero out the length bit.
 				x[delimitByteIndex] &= mask

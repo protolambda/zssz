@@ -85,7 +85,7 @@ func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
 		return err
 	}
 	span := dr.GetBytesSpan()
-	if span > v.maxFuzzLen - 8 {
+	if span > v.maxFuzzLen-8 {
 		span = v.maxFuzzLen - 8
 	}
 	length := uint64(0)

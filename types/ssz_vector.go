@@ -39,7 +39,7 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 		minElemLen = elemSSZ.MinLen()
 		maxElemLen = elemSSZ.MaxLen()
 		if fixedElemLen != minElemLen || fixedElemLen != maxElemLen {
-			return nil, fmt.Errorf("fixed-size element vector has invalid element min/max length:" +
+			return nil, fmt.Errorf("fixed-size element vector has invalid element min/max length:"+
 				" fixed: %d min: %d max: %d ", fixedElemLen, minElemLen, maxElemLen)
 		}
 	} else {
