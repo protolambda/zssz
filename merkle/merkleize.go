@@ -121,3 +121,78 @@ func Merkleize(hasher HashFn, count uint64, limit uint64, leaf func(i uint64) []
 
 	return tmp[limitDepth]
 }
+
+
+// ConstructProof builds a merkle-branch of the given depth, at the given index (at that depth),
+// for a list of leafs of a balanced binary tree.
+func ConstructProof(hasher HashFn, count uint64, limit uint64, leaf func(i uint64) []byte, index uint64) (branch [][32]byte) {
+	if count > limit {
+		panic("merkleizing list that is too large, over limit")
+	}
+	if index >= count {
+		panic("index out of range, not enough leaf values")
+	}
+	if limit <= 1 {
+		return
+	}
+	depth := GetDepth(count)
+	limitDepth := GetDepth(limit)
+	branch = make([][32]byte, limitDepth, limitDepth)
+	tmp := make([][32]byte, limitDepth+1, limitDepth+1)
+
+	if limit == 2 {
+		copy(branch[0][:], leaf(index ^ 1))
+		return
+	}
+
+	j := uint8(0)
+	hArr := [32]byte{}
+	h := hArr[:]
+
+	merge := func(i uint64) {
+		// merge back up from bottom to top, as far as we can
+		for j = 0; ; j++ {
+			// stop merging when we are in the left side of the next combi
+			if i&(uint64(1)<<j) == 0 {
+				// if we are at the count, we want to merge in zero-hashes for padding
+				if i == count && j < depth {
+					v := hasher.Combi(hArr, ZeroHashes[j])
+					copy(h, v[:])
+				} else {
+					break
+				}
+			} else {
+				// if i has the same parent as the index we are looking for, but not the same, then it is the sibling.
+				if ((index ^ i) >> (j + 1)) == 0 && i != index {
+					// insert sibling into the proof
+					branch[j] = hArr
+				}
+				// keep merging up if we are the right side
+				v := hasher.Combi(tmp[j], hArr)
+				copy(h, v[:])
+			}
+		}
+		// store the merge result (may be no merge, i.e. bottom leaf node)
+		copy(tmp[j][:], h)
+	}
+
+	// merge in leaf by leaf.
+	for i := uint64(0); i < count; i++ {
+		copy(h[:], leaf(i))
+		merge(i)
+	}
+
+	// complement with 0 if empty, or if not the right power of 2
+	if (uint64(1) << depth) != count {
+		copy(h[:], ZeroHashes[0][:])
+		merge(count)
+	}
+
+	// the next power of two may be smaller than the ultimate virtual size,
+	// complement the proof with zero-hashes at each depth.
+	for j := depth; j < limitDepth; j++ {
+		branch[j] = ZeroHashes[j]
+	}
+
+	return
+}
