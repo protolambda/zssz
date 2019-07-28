@@ -68,7 +68,9 @@ func Merkleize(hasher HashFn, count uint64, limit uint64, leaf func(i uint64) []
 		return
 	}
 	if limit == 1 {
-		copy(out[:], leaf(0))
+		if count == 1 {
+			copy(out[:], leaf(0))
+		}
 		return
 	}
 	depth := GetDepth(count)
@@ -129,21 +131,17 @@ func ConstructProof(hasher HashFn, count uint64, limit uint64, leaf func(i uint6
 	if count > limit {
 		panic("merkleizing list that is too large, over limit")
 	}
-	if index >= count {
-		panic("index out of range, not enough leaf values")
+	if index >= limit {
+		panic("index out of range, over limit")
 	}
 	if limit <= 1 {
 		return
 	}
 	depth := GetDepth(count)
 	limitDepth := GetDepth(limit)
-	branch = make([][32]byte, limitDepth, limitDepth)
-	tmp := make([][32]byte, limitDepth+1, limitDepth+1)
+	branch = append(branch, ZeroHashes[:limitDepth]...)
 
-	if limit == 2 {
-		copy(branch[0][:], leaf(index ^ 1))
-		return
-	}
+	tmp := make([][32]byte, limitDepth+1, limitDepth+1)
 
 	j := uint8(0)
 	hArr := [32]byte{}
@@ -152,6 +150,14 @@ func ConstructProof(hasher HashFn, count uint64, limit uint64, leaf func(i uint6
 	merge := func(i uint64) {
 		// merge back up from bottom to top, as far as we can
 		for j = 0; ; j++ {
+			// TODO: better than full tree allocation, but style/efficiency can be improved.
+			// if i is a sibling of index at the given depth,
+			// and i is the last index of the subtree to that depth,
+			// then put h into the branch
+			if (i >> j) ^ 1 == (index >> j) && (((1 << j) - 1) & i) == ((1 << j) - 1) {
+				// insert sibling into the proof
+				branch[j] = hArr
+			}
 			// stop merging when we are in the left side of the next combi
 			if i&(uint64(1)<<j) == 0 {
 				// if we are at the count, we want to merge in zero-hashes for padding
@@ -162,11 +168,6 @@ func ConstructProof(hasher HashFn, count uint64, limit uint64, leaf func(i uint6
 					break
 				}
 			} else {
-				// if i has the same parent as the index we are looking for, but not the same, then it is the sibling.
-				if ((index ^ i) >> (j + 1)) == 0 && i != index {
-					// insert sibling into the proof
-					branch[j] = hArr
-				}
 				// keep merging up if we are the right side
 				v := hasher.Combi(tmp[j], hArr)
 				copy(h, v[:])
@@ -186,12 +187,6 @@ func ConstructProof(hasher HashFn, count uint64, limit uint64, leaf func(i uint6
 	if (uint64(1) << depth) != count {
 		copy(h[:], ZeroHashes[0][:])
 		merge(count)
-	}
-
-	// the next power of two may be smaller than the ultimate virtual size,
-	// complement the proof with zero-hashes at each depth.
-	for j := depth; j < limitDepth; j++ {
-		branch[j] = ZeroHashes[j]
 	}
 
 	return
