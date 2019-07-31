@@ -42,7 +42,7 @@ func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint64, elemMemSize u
 		// calculate the scope based on next offset, and max. value of this scope for the last value
 		var scope uint64
 		if next := i + 1; next < len(offsets) {
-			if nextOffset := offsets[next]; nextOffset > currentOffset {
+			if nextOffset := offsets[next]; nextOffset >= currentOffset {
 				scope = nextOffset - currentOffset
 			} else {
 				return fmt.Errorf("offset %d is invalid", i)

@@ -232,7 +232,7 @@ func (v *SSZContainer) decodeDynamicPart(dr *DecodingReader, p unsafe.Pointer, o
 		var scope uint64
 		currentOffset := offsets[i]
 		if next := i + 1; next < len(offsets) {
-			if nextOffset := offsets[next]; nextOffset > currentOffset {
+			if nextOffset := offsets[next]; nextOffset >= currentOffset {
 				scope = nextOffset - currentOffset
 			} else {
 				return fmt.Errorf("offset %d for field %s is invalid", i, f.name)
