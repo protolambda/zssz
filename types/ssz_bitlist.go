@@ -60,7 +60,7 @@ func (v *SSZBitlist) MinLen() uint64 {
 
 // in bytes (rounded up), not bits
 func (v *SSZBitlist) MaxLen() uint64 {
-	return v.byteLimit
+	return (v.bitLimit >> 3) + 1
 }
 
 // in bytes (rounded up), not bits
@@ -100,8 +100,9 @@ func (v *SSZBitlist) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		byteLen = dr.Max() - dr.Index()
 	}
 	// there may not be more bytes than necessary for the N bits, +1 for the delimiting bit.
-	if byteLen > v.byteLimit {
-		return fmt.Errorf("got %d bytes, expected no more than %d bytes for bitlist", byteLen, v.byteLimit)
+	if byteLimitWithDelimiter := (v.bitLimit >> 3) + 1; byteLen > byteLimitWithDelimiter {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes for bitlist",
+			byteLen, byteLimitWithDelimiter)
 	}
 	ptrutil.BytesAllocFn(p, byteLen)
 	data := *(*[]byte)(p)
