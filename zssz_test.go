@@ -72,6 +72,19 @@ type embeddingStruct struct {
 	Foo           smallTestStruct `ssz:"squash"` // Squash field explicitly
 }
 
+type ListA []smallTestStruct
+
+func (*ListA) Limit() uint64 { return 4 }
+
+type ListB []VarTestStruct
+
+func (*ListB) Limit() uint64 { return 8 }
+
+type ListStruct struct {
+	A ListA
+	B ListB
+}
+
 type Squash1 struct {
 	A uint8
 	D *uint32 `ssz:"omit"`
@@ -128,86 +141,86 @@ func repeat(v string, count int) (out string) {
 
 type bitvec513 [64 + 1]byte
 
-func (_ *bitvec513) BitLen() uint64 { return 513 }
+func (*bitvec513) BitLen() uint64 { return 513 }
 
 type bitvec512 [64]byte
 
-func (_ *bitvec512) BitLen() uint64 { return 512 }
+func (*bitvec512) BitLen() uint64 { return 512 }
 
 type bitvec16 [2]byte
 
-func (_ *bitvec16) BitLen() uint64 { return 16 }
+func (*bitvec16) BitLen() uint64 { return 16 }
 
 type bitvec10 [2]byte
 
-func (_ *bitvec10) BitLen() uint64 { return 10 }
+func (*bitvec10) BitLen() uint64 { return 10 }
 
 type bitvec8 [1]byte
 
-func (_ *bitvec8) BitLen() uint64 { return 8 }
+func (*bitvec8) BitLen() uint64 { return 8 }
 
 type bitvec4 [1]byte
 
-func (_ *bitvec4) BitLen() uint64 { return 4 }
+func (*bitvec4) BitLen() uint64 { return 4 }
 
 type bitvec3 [1]byte
 
-func (_ *bitvec3) BitLen() uint64 { return 3 }
+func (*bitvec3) BitLen() uint64 { return 3 }
 
 // Many different Bitlist types for testing
 
 type bitlist513 []byte
 
-func (_ *bitlist513) Limit() uint64 { return 513 }
+func (*bitlist513) Limit() uint64 { return 513 }
 func (b bitlist513) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist512 []byte
 
-func (_ *bitlist512) Limit() uint64 { return 512 }
+func (*bitlist512) Limit() uint64 { return 512 }
 func (b bitlist512) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist16 []byte
 
-func (_ *bitlist16) Limit() uint64 { return 16 }
+func (*bitlist16) Limit() uint64 { return 16 }
 func (b bitlist16) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist10 []byte
 
-func (_ *bitlist10) Limit() uint64 { return 10 }
+func (*bitlist10) Limit() uint64 { return 10 }
 func (b bitlist10) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist8 []byte
 
-func (_ *bitlist8) Limit() uint64 { return 8 }
+func (*bitlist8) Limit() uint64 { return 8 }
 func (b bitlist8) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist4 []byte
 
-func (_ *bitlist4) Limit() uint64 { return 4 }
+func (*bitlist4) Limit() uint64 { return 4 }
 func (b bitlist4) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist3 []byte
 
-func (_ *bitlist3) Limit() uint64 { return 3 }
+func (*bitlist3) Limit() uint64 { return 3 }
 func (b bitlist3) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 // Some list types for testing
 
 type list32uint16 []uint16
 
-func (_ *list32uint16) Limit() uint64 { return 32 }
+func (*list32uint16) Limit() uint64 { return 32 }
 
 type list128uint32 []uint32
 
-func (_ *list128uint32) Limit() uint64 { return 128 }
+func (*list128uint32) Limit() uint64 { return 128 }
 
 type list64bytes32 [][32]byte
 
-func (_ *list64bytes32) Limit() uint64 { return 64 }
+func (*list64bytes32) Limit() uint64 { return 64 }
 
 type list128bytes32 [][32]byte
 
-func (_ *list128bytes32) Limit() uint64 { return 128 }
+func (*list128bytes32) Limit() uint64 { return 128 }
 
 func getTyp(ptr interface{}) reflect.Type {
 	return reflect.TypeOf(ptr).Elem()
@@ -256,7 +269,7 @@ func init() {
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		}, repeat("ff", 64), h(repeat("ff", 32), repeat("ff", 32)), getTyp((*bitvec512)(nil)),
 		},
-		{"long bitlist", bitlist512{7}, "03", h(h(chunk("03"), chunk("")), chunk("02")), getTyp((*bitlist512)(nil))},
+		{"long bitlist", bitlist512{7}, "07", h(h(chunk("03"), chunk("")), chunk("02")), getTyp((*bitlist512)(nil))},
 		{"long bitlist filled", bitlist512{
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -372,6 +385,49 @@ func init() {
 				h(chunk("ff"), chunk("")),
 			),
 			getTyp((*VarTestStruct)(nil))},
+		{"empty list", ListA{}, "", h(zeroHashes[2], chunk("00000000")), getTyp((*ListA)(nil))},
+		{"empty var element list", ListB{}, "",h(zeroHashes[3], chunk("00000000")), getTyp((*ListB)(nil))},
+		{"var element list", ListB{
+			{A: 0xdead, B: []uint16{1, 2, 3}, C: 0x11},
+			{A: 0xbeef, B: []uint16{4, 5, 6}, C: 0x22}},
+			"08000000" + "15000000" +
+				"adde0700000011010002000300" +
+				"efbe0700000022040005000600",
+				h(h(
+					h(
+						h(
+							h(h(chunk("adde"), h(merge(chunk("010002000300"), zeroHashes[0:6]), chunk("03000000"))),
+								h(chunk("11"), chunk(""))),
+							h(h(chunk("efbe"), h(merge(chunk("040005000600"), zeroHashes[0:6]), chunk("03000000"))),
+								h(chunk("22"), chunk(""))),
+						),
+						zeroHashes[1],
+					),
+					zeroHashes[2],
+				), chunk("02000000")), getTyp((*ListB)(nil))},
+		{"empty list fields", ListStruct{}, "08000000"+"08000000",
+			h(h(zeroHashes[2], chunk("")), h(zeroHashes[3], chunk(""))), getTyp((*ListStruct)(nil))},
+		{"empty last field", ListStruct{A: ListA{
+			smallTestStruct{A: 0xaa11, B: 0xbb22},
+			smallTestStruct{A: 0xcc33, B: 0xdd44},
+			smallTestStruct{A: 0x1234, B: 0x4567},
+		}}, "08000000"+"14000000"+("11aa22bb"+"33cc44dd"+"34126745"),
+		h(
+			h(
+				h(
+					h(
+						h(chunk("11aa"), chunk("22bb")),
+						h(chunk("33cc"), chunk("44dd")),
+					),
+					h(
+						h(chunk("3412"), chunk("6745")),
+						chunk(""),
+					),
+				),
+				chunk("03000000"),
+			),
+			h(zeroHashes[3], chunk("")),
+			), getTyp((*ListStruct)(nil))},
 		{"complexTestStruct",
 			complexTestStruct{
 				A: 0xaabb,
