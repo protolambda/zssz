@@ -10,11 +10,11 @@ type SliceHeader struct {
 	Cap  int
 }
 
-func GetSliceHeader(p unsafe.Pointer, length uint32) *SliceHeader {
+func GetSliceHeader(p unsafe.Pointer, length uint64) *SliceHeader {
 	return &SliceHeader{
 		Data: p,
-		Len: int(length),
-		Cap: int(length),
+		Len:  int(length),
+		Cap:  int(length),
 	}
 }
 

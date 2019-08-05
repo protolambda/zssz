@@ -5,13 +5,14 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
 )
 
 type SSZBytesN struct {
-	length uint32
+	length uint64
 }
 
 func NewSSZBytesN(typ reflect.Type) (*SSZBytesN, error) {
@@ -22,25 +23,27 @@ func NewSSZBytesN(typ reflect.Type) (*SSZBytesN, error) {
 		return nil, fmt.Errorf("typ is not a bytes array")
 	}
 	length := typ.Len()
-	res := &SSZBytesN{length: uint32(length)}
+	res := &SSZBytesN{length: uint64(length)}
 	return res, nil
 }
 
-func (v *SSZBytesN) FuzzReqLen() uint32 {
+func (v *SSZBytesN) FuzzMinLen() uint64 {
 	return v.length
 }
 
-func (v *SSZBytesN) VectorLength() uint32 {
+func (v *SSZBytesN) FuzzMaxLen() uint64 {
 	return v.length
 }
 
-func (v *SSZBytesN) FixedLen() uint32 {
-	// 1 byte per element, just the same as the length
+func (v *SSZBytesN) MinLen() uint64 {
 	return v.length
 }
 
-func (v *SSZBytesN) MinLen() uint32 {
-	// 1 byte per element, just the same as the length
+func (v *SSZBytesN) MaxLen() uint64 {
+	return v.length
+}
+
+func (v *SSZBytesN) FixedLen() uint64 {
 	return v.length
 }
 
@@ -64,18 +67,17 @@ func (v *SSZBytesN) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZBytesN) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.GetSliceHeader(p, v.length)
 	data := *(*[]byte)(unsafe.Pointer(sh))
-	dataLen := uint32(len(data))
-	leafCount := (dataLen + 31) >> 5
-	leaf := func(i uint32) []byte {
+	leafCount := (v.length + 31) >> 5
+	leaf := func(i uint64) []byte {
 		s := i << 5
 		e := (i + 1) << 5
 		// pad the data
-		if e > dataLen {
-			v := [32]byte{}
-			copy(v[:], data[s:dataLen])
-			return v[:]
+		if e > v.length {
+			x := [32]byte{}
+			copy(x[:], data[s:v.length])
+			return x[:]
 		}
 		return data[s:e]
 	}
-	return Merkleize(h, leafCount, leaf)
+	return merkle.Merkleize(h, leafCount, leafCount, leaf)
 }

@@ -10,9 +10,9 @@ import (
 type EncoderFn func(eb *EncodingBuffer, pointer unsafe.Pointer)
 
 type EncodingBuffer struct {
-	buffer bytes.Buffer
-	forward bytes.Buffer
-	forwardIndex uint32
+	buffer       bytes.Buffer
+	forward      bytes.Buffer
+	forwardIndex uint64
 }
 
 func (eb *EncodingBuffer) Bytes() []byte {
@@ -29,7 +29,7 @@ func (eb *EncodingBuffer) WriteForward(data io.Reader) {
 	if err != nil {
 		panic(err)
 	}
-	eb.forwardIndex += uint32(n)
+	eb.forwardIndex += uint64(n)
 }
 
 // Writes the forward buffer to the main buffer, and resets the forward buffer.
@@ -58,9 +58,16 @@ func (eb *EncodingBuffer) WriteTo(w io.Writer) (n int64, err error) {
 }
 
 // Writes an offset, calculated as index(forward) + fixedLen, to the end of the buffer
-func (eb *EncodingBuffer) WriteOffset(fixedLen uint32) {
+func (eb *EncodingBuffer) WriteOffset(fixedLen uint64) {
 	tmp := make([]byte, 4, 4)
-	binary.LittleEndian.PutUint32(tmp, eb.forwardIndex + fixedLen)
+	if fixedLen >= (uint64(1) << 32) {
+		panic("cannot write offset with invalid fixed-length starting point")
+	}
+	offset := eb.forwardIndex + fixedLen
+	if offset >= (uint64(1) << 32) {
+		panic("offset too large, not uint32")
+	}
+	binary.LittleEndian.PutUint32(tmp, uint32(offset))
 	eb.buffer.Write(tmp)
 }
 
@@ -70,4 +77,3 @@ func (eb *EncodingBuffer) Reset() {
 	eb.forward.Reset()
 	eb.forwardIndex = 0
 }
-

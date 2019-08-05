@@ -13,21 +13,29 @@ import (
 type BasicHtrFn func(pointer unsafe.Pointer) [32]byte
 
 type SSZBasic struct {
-	Length   uint32
-	Encoder  EncoderFn
-	Decoder  DecoderFn
-	HTR      BasicHtrFn
+	Length  uint64
+	Encoder EncoderFn
+	Decoder DecoderFn
+	HTR     BasicHtrFn
 }
 
-func (v *SSZBasic) FuzzReqLen() uint32 {
+func (v *SSZBasic) FuzzMinLen() uint64 {
 	return v.Length
 }
 
-func (v *SSZBasic) FixedLen() uint32 {
+func (v *SSZBasic) FuzzMaxLen() uint64 {
 	return v.Length
 }
 
-func (v *SSZBasic) MinLen() uint32 {
+func (v *SSZBasic) MinLen() uint64 {
+	return v.Length
+}
+
+func (v *SSZBasic) MaxLen() uint64 {
+	return v.Length
+}
+
+func (v *SSZBasic) FixedLen() uint64 {
 	return v.Length
 }
 
@@ -48,7 +56,7 @@ func (v *SSZBasic) HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte {
 }
 
 var sszBool = &SSZBasic{
-	Length:   1,
+	Length: 1,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		eb.WriteByte(*(*byte)(p))
 	},
@@ -66,7 +74,7 @@ var sszBool = &SSZBasic{
 		} else {
 			if dr.IsFuzzMode() {
 				// just make a valid random bool
-				*(*bool)(p) = b & 1 != 0
+				*(*bool)(p) = b&1 != 0
 				return nil
 			} else {
 				return fmt.Errorf("bool value is invalid")
@@ -80,7 +88,7 @@ var sszBool = &SSZBasic{
 }
 
 var sszUint8 = &SSZBasic{
-	Length:   1,
+	Length: 1,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		eb.WriteByte(*(*byte)(p))
 	},
@@ -99,7 +107,7 @@ var sszUint8 = &SSZBasic{
 }
 
 var sszUint16 = &SSZBasic{
-	Length:   2,
+	Length: 2,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [2]byte{}
 		binary.LittleEndian.PutUint16(v[:], *(*uint16)(p))
@@ -120,7 +128,7 @@ var sszUint16 = &SSZBasic{
 }
 
 var sszUint32 = &SSZBasic{
-	Length:   4,
+	Length: 4,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [4]byte{}
 		binary.LittleEndian.PutUint32(v[:], *(*uint32)(p))
@@ -141,7 +149,7 @@ var sszUint32 = &SSZBasic{
 }
 
 var sszUint64 = &SSZBasic{
-	Length:   8,
+	Length: 8,
 	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
 		v := [8]byte{}
 		binary.LittleEndian.PutUint64(v[:], *(*uint64)(p))

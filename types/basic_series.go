@@ -5,19 +5,23 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"unsafe"
 )
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
-func LittleEndianBasicSeriesEncode(eb *EncodingBuffer, p unsafe.Pointer, bytesLen uint32) {
+func LittleEndianBasicSeriesEncode(eb *EncodingBuffer, p unsafe.Pointer, bytesLen uint64) {
 	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 	eb.Write(data)
 }
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
-func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLen uint32, isBoolElem bool) error {
+func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLen uint64, bytesLimit uint64, isBoolElem bool) error {
+	if bytesLen > bytesLimit {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes", bytesLen, bytesLimit)
+	}
 	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 	if _, err := dr.Read(data); err != nil {
@@ -43,11 +47,11 @@ func LittleEndianBasicSeriesDecode(dr *DecodingReader, p unsafe.Pointer, bytesLe
 }
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
-func LittleEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, bytesLen uint32) [32]byte {
+func LittleEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, bytesLen uint64, bytesLimit uint64) [32]byte {
 	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		s := i << 5
 		e := (i + 1) << 5
 		// pad the data
@@ -59,7 +63,8 @@ func LittleEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, bytesLen uint32) [32
 		return data[s:e]
 	}
 	leafCount := (bytesLen + 31) >> 5
-	return Merkleize(h, leafCount, leaf)
+	leafLimit := (bytesLimit + 31) >> 5
+	return merkle.Merkleize(h, leafCount, leafLimit, leaf)
 }
 
 func BigToLittleEndianChunk(data [32]byte, elemSize uint8) (out [32]byte) {
@@ -78,11 +83,11 @@ func BigToLittleEndianChunk(data [32]byte, elemSize uint8) (out [32]byte) {
 }
 
 // counter-part of LittleEndianBasicSeriesHTR
-func BigEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, bytesLen uint32, elemSize uint8) [32]byte {
+func BigEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, bytesLen uint64, bytesLimit uint64, elemSize uint8) [32]byte {
 	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
 
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		s := i << 5
 		e := (i + 1) << 5
 		d := [32]byte{}
@@ -95,5 +100,6 @@ func BigEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, bytesLen uint32, elemSi
 		return d[:]
 	}
 	leafCount := (bytesLen + 31) >> 5
-	return Merkleize(h, leafCount, leaf)
+	leafLimit := (bytesLimit + 31) >> 5
+	return merkle.Merkleize(h, leafCount, leafLimit, leaf)
 }

@@ -5,12 +5,14 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
 )
 
 type SSZBytes struct {
+	limit uint64
 }
 
 func NewSSZBytes(typ reflect.Type) (*SSZBytes, error) {
@@ -20,18 +22,30 @@ func NewSSZBytes(typ reflect.Type) (*SSZBytes, error) {
 	if typ.Elem().Kind() != reflect.Uint8 {
 		return nil, fmt.Errorf("typ is not a bytes slice")
 	}
-	return &SSZBytes{}, nil
+	limit, err := ReadListLimit(typ)
+	if err != nil {
+		return nil, err
+	}
+	return &SSZBytes{limit: limit}, nil
 }
 
-func (v *SSZBytes) FuzzReqLen() uint32 {
-	return 4
+func (v *SSZBytes) FuzzMinLen() uint64 {
+	return 8
 }
 
-func (v *SSZBytes) FixedLen() uint32 {
+func (v *SSZBytes) FuzzMaxLen() uint64 {
+	return 8 + v.limit
+}
+
+func (v *SSZBytes) MinLen() uint64 {
 	return 0
 }
 
-func (v *SSZBytes) MinLen() uint32 {
+func (v *SSZBytes) MaxLen() uint64 {
+	return v.limit
+}
+
+func (v *SSZBytes) FixedLen() uint64 {
 	return 0
 }
 
@@ -46,18 +60,24 @@ func (v *SSZBytes) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	var length uint32
+	var length uint64
 	if dr.IsFuzzMode() {
-		x, err := dr.ReadUint32()
+		x, err := dr.ReadUint64()
 		if err != nil {
 			return err
 		}
 		span := dr.GetBytesSpan()
+		if span > v.limit {
+			span = v.limit
+		}
 		if span != 0 {
 			length = x % span
 		}
 	} else {
 		length = dr.Max() - dr.Index()
+	}
+	if length > v.limit {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes", length, v.limit)
 	}
 	ptrutil.BytesAllocFn(p, length)
 	data := *(*[]byte)(p)
@@ -68,18 +88,19 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZBytes) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 	data := *(*[]byte)(unsafe.Pointer(sh))
-	dataLen := uint32(len(data))
+	dataLen := uint64(len(data))
 	leafCount := (dataLen + 31) >> 5
-	leaf := func(i uint32) []byte {
+	leafLimit := (v.limit + 31) >> 5
+	leaf := func(i uint64) []byte {
 		s := i << 5
 		e := (i + 1) << 5
 		// pad the data
 		if e > dataLen {
-			v := [32]byte{}
-			copy(v[:], data[s:dataLen])
-			return v[:]
+			x := [32]byte{}
+			copy(x[:], data[s:dataLen])
+			return x[:]
 		}
 		return data[s:e]
 	}
-	return h.MixIn(Merkleize(h, leafCount, leaf), dataLen)
+	return h.MixIn(merkle.Merkleize(h, leafCount, leafLimit, leaf), dataLen)
 }

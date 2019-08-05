@@ -12,42 +12,59 @@ import (
 )
 
 type SSZBasicList struct {
-	alloc    ptrutil.SliceAllocationFn
-	elemKind reflect.Kind
-	elemSSZ  *SSZBasic
+	alloc     ptrutil.SliceAllocationFn
+	elemKind  reflect.Kind
+	elemSSZ   *SSZBasic
+	limit     uint64
+	byteLimit uint64
 }
 
 func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	if typ.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("typ is not a dynamic-length array")
 	}
+	limit, err := ReadListLimit(typ)
+	if err != nil {
+		return nil, err
+	}
+
 	elemTyp := typ.Elem()
 	elemKind := elemTyp.Kind()
 	elemSSZ, err := GetBasicSSZElemType(elemKind)
 	if err != nil {
 		return nil, err
 	}
-	if elemSSZ.Length != uint32(elemTyp.Size()) {
+	if elemSSZ.Length != uint64(elemTyp.Size()) {
 		return nil, fmt.Errorf("basic element type has different size than SSZ type unexpectedly, ssz: %d, go: %d", elemSSZ.Length, elemTyp.Size())
 	}
 
 	res := &SSZBasicList{
-		alloc: ptrutil.MakeSliceAllocFn(typ),
-		elemKind: elemKind,
-		elemSSZ:  elemSSZ,
+		alloc:     ptrutil.MakeSliceAllocFn(typ),
+		elemKind:  elemKind,
+		elemSSZ:   elemSSZ,
+		limit:     limit,
+		byteLimit: limit * elemSSZ.Length,
 	}
 	return res, nil
 }
 
-func (v *SSZBasicList) FuzzReqLen() uint32 {
-	return 4
+func (v *SSZBasicList) FuzzMinLen() uint64 {
+	return 8
 }
 
-func (v *SSZBasicList) MinLen() uint32 {
+func (v *SSZBasicList) FuzzMaxLen() uint64 {
+	return 8 + v.byteLimit
+}
+
+func (v *SSZBasicList) MinLen() uint64 {
 	return 0
 }
 
-func (v *SSZBasicList) FixedLen() uint32 {
+func (v *SSZBasicList) MaxLen() uint64 {
+	return v.byteLimit
+}
+
+func (v *SSZBasicList) FixedLen() uint64 {
 	return 0
 }
 
@@ -62,18 +79,21 @@ func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		LittleEndianBasicSeriesEncode(eb, sh.Data, uint32(sh.Len)*v.elemSSZ.Length)
+		LittleEndianBasicSeriesEncode(eb, sh.Data, uint64(sh.Len)*v.elemSSZ.Length)
 	} else {
-		EncodeFixedSeries(v.elemSSZ.Encoder, uint32(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
+		EncodeFixedSeries(v.elemSSZ.Encoder, uint64(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
 	}
 }
 
 func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
-	x, err := dr.ReadUint32()
+	x, err := dr.ReadUint64()
 	if err != nil {
 		return err
 	}
 	span := dr.GetBytesSpan()
+	if v.byteLimit > span {
+		span = v.byteLimit
+	}
 	if span == 0 {
 		return nil
 	}
@@ -82,9 +102,10 @@ func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) erro
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
-		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
+		bytesLimit := v.limit * v.elemSSZ.Length
+		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
 	}
 }
 
@@ -96,9 +117,10 @@ func (v *SSZBasicList) decode(dr *DecodingReader, p unsafe.Pointer) error {
 
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
-		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, v.elemKind == reflect.Bool)
+		bytesLimit := v.limit * v.elemSSZ.Length
+		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
 	}
 }
 
@@ -111,12 +133,13 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 }
 
 func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
-	//elemSize := v.elemMemSize
 	sh := ptrutil.ReadSliceHeader(p)
 
+	bytesLen := uint64(sh.Len) * v.elemSSZ.Length
+	bytesLimit := v.limit * v.elemSSZ.Length
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len)*v.elemSSZ.Length), uint32(sh.Len))
+		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit), uint64(sh.Len))
 	} else {
-		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, uint32(sh.Len)*v.elemSSZ.Length, uint8(v.elemSSZ.Length)), uint32(sh.Len))
+		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit, uint8(v.elemSSZ.Length)), uint64(sh.Len))
 	}
 }

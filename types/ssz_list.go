@@ -5,21 +5,30 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
 )
 
 type SSZList struct {
-	alloc    ptrutil.SliceAllocationFn
+	alloc       ptrutil.SliceAllocationFn
 	elemMemSize uintptr
 	elemSSZ     SSZ
+	limit       uint64
+	byteLimit   uint64
+	maxFuzzLen  uint64
 }
 
 func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 	if typ.Kind() != reflect.Slice {
 		return nil, fmt.Errorf("typ is not a dynamic-length array")
 	}
+	limit, err := ReadListLimit(typ)
+	if err != nil {
+		return nil, err
+	}
+
 	elemTyp := typ.Elem()
 
 	elemSSZ, err := factory(elemTyp)
@@ -27,22 +36,33 @@ func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 		return nil, err
 	}
 	res := &SSZList{
-		alloc: ptrutil.MakeSliceAllocFn(typ),
+		alloc:       ptrutil.MakeSliceAllocFn(typ),
 		elemMemSize: elemTyp.Size(),
 		elemSSZ:     elemSSZ,
+		limit:       limit,
+		byteLimit:   limit * (BYTES_PER_LENGTH_OFFSET + elemSSZ.MaxLen()),
+		maxFuzzLen:  8 + (limit * elemSSZ.FuzzMaxLen()),
 	}
 	return res, nil
 }
 
-func (v *SSZList) FuzzReqLen() uint32 {
-	return 4
+func (v *SSZList) FuzzMinLen() uint64 {
+	return 8
 }
 
-func (v *SSZList) MinLen() uint32 {
+func (v *SSZList) FuzzMaxLen() uint64 {
+	return v.maxFuzzLen
+}
+
+func (v *SSZList) MinLen() uint64 {
 	return 0
 }
 
-func (v *SSZList) FixedLen() uint32 {
+func (v *SSZList) MaxLen() uint64 {
+	return v.byteLimit
+}
+
+func (v *SSZList) FixedLen() uint64 {
 	return 0
 }
 
@@ -53,24 +73,24 @@ func (v *SSZList) IsFixed() bool {
 func (v *SSZList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	sh := ptrutil.ReadSliceHeader(p)
 	if v.elemSSZ.IsFixed() {
-		EncodeFixedSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, sh.Data)
+		EncodeFixedSeries(v.elemSSZ.Encode, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
 	} else {
-		EncodeVarSeries(v.elemSSZ.Encode, uint32(sh.Len), v.elemMemSize, eb, sh.Data)
+		EncodeVarSeries(v.elemSSZ.Encode, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
 	}
 }
 
 func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
-	x, err := dr.ReadUint32()
+	x, err := dr.ReadUint64()
 	if err != nil {
 		return err
 	}
 	span := dr.GetBytesSpan()
-	length := uint32(0)
-	if span != 0 {
-		length = (x % span) / v.elemSSZ.FuzzReqLen()
+	if span > v.maxFuzzLen-8 {
+		span = v.maxFuzzLen - 8
 	}
-	if !v.elemSSZ.IsFixed() {
-		length /= 10
+	length := uint64(0)
+	if span != 0 {
+		length = (x % span) / v.elemSSZ.FuzzMinLen()
 	}
 	contentsPtr := v.alloc(p, length)
 	if v.elemSSZ.IsFixed() {
@@ -83,10 +103,10 @@ func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZList) decode(dr *DecodingReader, p unsafe.Pointer) error {
 	bytesLen := dr.Max() - dr.Index()
 	if v.elemSSZ.IsFixed() {
-		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.alloc, v.elemMemSize, dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.limit, v.alloc, v.elemMemSize, dr, p)
 	} else {
 		// still pass the fixed length of the element, but just to check a minimum length requirement.
-		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.alloc, v.elemMemSize, dr, p)
+		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.limit, v.alloc, v.elemMemSize, dr, p)
 	}
 }
 
@@ -102,9 +122,9 @@ func (v *SSZList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize
 	sh := ptrutil.ReadSliceHeader(p)
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		r := elemHtr(h, unsafe.Pointer(uintptr(sh.Data)+(elemSize*uintptr(i))))
 		return r[:]
 	}
-	return h.MixIn(Merkleize(h, uint32(sh.Len), leaf), uint32(sh.Len))
+	return h.MixIn(merkle.Merkleize(h, uint64(sh.Len), v.limit, leaf), uint64(sh.Len))
 }

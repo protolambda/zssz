@@ -13,7 +13,7 @@ import (
 // proxies SSZ behavior to the SSZ type of the object being pointed to.
 type SSZPtr struct {
 	elemSSZ SSZ
-	alloc ptrutil.AllocationFn
+	alloc   ptrutil.AllocationFn
 }
 
 func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
@@ -31,15 +31,23 @@ func NewSSZPtr(factory SSZFactoryFn, typ reflect.Type) (*SSZPtr, error) {
 	return &SSZPtr{elemSSZ: elemSSZ, alloc: alloc}, nil
 }
 
-func (v *SSZPtr) FuzzReqLen() uint32 {
-	return v.elemSSZ.FuzzReqLen()
+func (v *SSZPtr) FuzzMinLen() uint64 {
+	return v.elemSSZ.FuzzMinLen()
 }
 
-func (v *SSZPtr) MinLen() uint32 {
+func (v *SSZPtr) FuzzMaxLen() uint64 {
+	return v.elemSSZ.FuzzMaxLen()
+}
+
+func (v *SSZPtr) MinLen() uint64 {
 	return v.elemSSZ.MinLen()
 }
 
-func (v *SSZPtr) FixedLen() uint32 {
+func (v *SSZPtr) MaxLen() uint64 {
+	return v.elemSSZ.MaxLen()
+}
+
+func (v *SSZPtr) FixedLen() uint64 {
 	return v.elemSSZ.FixedLen()
 }
 

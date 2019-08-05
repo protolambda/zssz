@@ -5,42 +5,47 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	"github.com/protolambda/zssz/merkle"
 	"reflect"
 	"unsafe"
 )
 
-type VectorLength interface {
-	VectorLength() uint32
-}
-
 type SSZVector struct {
-	length      uint32
+	length      uint64
 	elemMemSize uintptr
 	elemSSZ     SSZ
 	isFixedLen  bool
-	fixedLen    uint32
-	minLen      uint32
-	fuzzReqLen  uint32
+	fixedLen    uint64
+	minLen      uint64
+	maxLen      uint64
+	fuzzMinLen  uint64
+	fuzzMaxLen  uint64
 }
 
 func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 	if typ.Kind() != reflect.Array {
 		return nil, fmt.Errorf("typ is not a fixed-length array")
 	}
-	length := uint32(typ.Len())
+	length := uint64(typ.Len())
 	elemTyp := typ.Elem()
 
 	elemSSZ, err := factory(elemTyp)
 	if err != nil {
 		return nil, err
 	}
-	var fixedElemLen, minElemLen uint32
+	var fixedElemLen, minElemLen, maxElemLen uint64
 	if elemSSZ.IsFixed() {
 		fixedElemLen = elemSSZ.FixedLen()
 		minElemLen = elemSSZ.MinLen()
+		maxElemLen = elemSSZ.MaxLen()
+		if fixedElemLen != minElemLen || fixedElemLen != maxElemLen {
+			return nil, fmt.Errorf("fixed-size element vector has invalid element min/max length:"+
+				" fixed: %d min: %d max: %d ", fixedElemLen, minElemLen, maxElemLen)
+		}
 	} else {
-		fixedElemLen = uint32(BYTES_PER_LENGTH_OFFSET)
-		minElemLen = uint32(BYTES_PER_LENGTH_OFFSET) + elemSSZ.MinLen()
+		fixedElemLen = BYTES_PER_LENGTH_OFFSET
+		minElemLen = BYTES_PER_LENGTH_OFFSET + elemSSZ.MinLen()
+		maxElemLen = BYTES_PER_LENGTH_OFFSET + elemSSZ.MaxLen()
 	}
 	res := &SSZVector{
 		length:      length,
@@ -49,24 +54,30 @@ func NewSSZVector(factory SSZFactoryFn, typ reflect.Type) (*SSZVector, error) {
 		isFixedLen:  elemSSZ.IsFixed(),
 		fixedLen:    fixedElemLen * length,
 		minLen:      minElemLen * length,
-		fuzzReqLen:  elemSSZ.FuzzReqLen() * length,
+		maxLen:      maxElemLen * length,
+		fuzzMinLen:  elemSSZ.FuzzMinLen() * length,
+		fuzzMaxLen:  elemSSZ.FuzzMaxLen() * length,
 	}
 	return res, nil
 }
 
-func (v *SSZVector) FuzzReqLen() uint32 {
-	return v.fuzzReqLen
+func (v *SSZVector) FuzzMinLen() uint64 {
+	return v.fuzzMinLen
 }
 
-func (v *SSZVector) VectorLength() uint32 {
-	return v.length
+func (v *SSZVector) FuzzMaxLen() uint64 {
+	return v.fuzzMaxLen
 }
 
-func (v *SSZVector) MinLen() uint32 {
+func (v *SSZVector) MinLen() uint64 {
 	return v.minLen
 }
 
-func (v *SSZVector) FixedLen() uint32 {
+func (v *SSZVector) MaxLen() uint64 {
+	return v.maxLen
+}
+
+func (v *SSZVector) FixedLen() uint64 {
 	return v.fixedLen
 }
 
@@ -97,9 +108,9 @@ func (v *SSZVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize
-	leaf := func(i uint32) []byte {
+	leaf := func(i uint64) []byte {
 		v := elemHtr(h, unsafe.Pointer(uintptr(p)+(elemSize*uintptr(i))))
 		return v[:]
 	}
-	return Merkleize(h, v.length, leaf)
+	return merkle.Merkleize(h, v.length, v.length, leaf)
 }

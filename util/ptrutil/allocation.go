@@ -6,18 +6,18 @@ import (
 	"unsafe"
 )
 
-type SliceAllocationFn func(p unsafe.Pointer, length uint32) unsafe.Pointer
+type SliceAllocationFn func(p unsafe.Pointer, length uint64) unsafe.Pointer
 
 type AllocationFn func(p unsafe.Pointer) unsafe.Pointer
 
 var bytesSliceTyp = reflect.TypeOf(new([]byte)).Elem()
 
-func BytesAllocFn(p unsafe.Pointer, length uint32) unsafe.Pointer {
+func BytesAllocFn(p unsafe.Pointer, length uint64) unsafe.Pointer {
 	return AllocateSliceSpaceAndBind(p, length, bytesSliceTyp)
 }
 
 func MakeSliceAllocFn(typ reflect.Type) SliceAllocationFn {
-	return func(p unsafe.Pointer, length uint32) unsafe.Pointer {
+	return func(p unsafe.Pointer, length uint64) unsafe.Pointer {
 		return AllocateSliceSpaceAndBind(p, length, typ)
 	}
 }
@@ -26,7 +26,7 @@ func MakeSliceAllocFn(typ reflect.Type) SliceAllocationFn {
 // Note: p is assumed to be a pointer to a slice header,
 // and the pointer is assumed to keep the referenced data alive as long as necessary, away from the GC.
 // The allocated space is zeroed out.
-func AllocateSliceSpaceAndBind(p unsafe.Pointer, length uint32, typ reflect.Type) unsafe.Pointer {
+func AllocateSliceSpaceAndBind(p unsafe.Pointer, length uint64, typ reflect.Type) unsafe.Pointer {
 	if length == 0 {
 		pSh := (*SliceHeader)(p)
 		pSh.Len = 0
