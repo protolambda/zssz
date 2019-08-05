@@ -124,7 +124,6 @@ func Merkleize(hasher HashFn, count uint64, limit uint64, leaf func(i uint64) []
 	return tmp[limitDepth]
 }
 
-
 // ConstructProof builds a merkle-branch of the given depth, at the given index (at that depth),
 // for a list of leafs of a balanced binary tree.
 func ConstructProof(hasher HashFn, count uint64, limit uint64, leaf func(i uint64) []byte, index uint64) (branch [][32]byte) {
@@ -154,7 +153,7 @@ func ConstructProof(hasher HashFn, count uint64, limit uint64, leaf func(i uint6
 			// if i is a sibling of index at the given depth,
 			// and i is the last index of the subtree to that depth,
 			// then put h into the branch
-			if (i >> j) ^ 1 == (index >> j) && (((1 << j) - 1) & i) == ((1 << j) - 1) {
+			if (i>>j)^1 == (index>>j) && (((1<<j)-1)&i) == ((1<<j)-1) {
 				// insert sibling into the proof
 				branch[j] = hArr
 			}

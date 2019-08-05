@@ -17,7 +17,7 @@ var ZeroHashes [][32]byte
 
 // initialize the zero-hashes pre-computed data with the given hash-function.
 func InitZeroHashes(hFn HashFn) {
-	ZeroHashes = make([][32]byte, zeroHashesLevels + 1)
+	ZeroHashes = make([][32]byte, zeroHashesLevels+1)
 	v := [64]byte{}
 	for i := 0; i < zeroHashesLevels; i++ {
 		copy(v[:32], ZeroHashes[i][:])

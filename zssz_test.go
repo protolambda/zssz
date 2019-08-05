@@ -171,37 +171,37 @@ func (*bitvec3) BitLen() uint64 { return 3 }
 
 type bitlist513 []byte
 
-func (*bitlist513) Limit() uint64 { return 513 }
+func (*bitlist513) Limit() uint64   { return 513 }
 func (b bitlist513) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist512 []byte
 
-func (*bitlist512) Limit() uint64 { return 512 }
+func (*bitlist512) Limit() uint64   { return 512 }
 func (b bitlist512) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist16 []byte
 
-func (*bitlist16) Limit() uint64 { return 16 }
+func (*bitlist16) Limit() uint64   { return 16 }
 func (b bitlist16) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist10 []byte
 
-func (*bitlist10) Limit() uint64 { return 10 }
+func (*bitlist10) Limit() uint64   { return 10 }
 func (b bitlist10) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist8 []byte
 
-func (*bitlist8) Limit() uint64 { return 8 }
+func (*bitlist8) Limit() uint64   { return 8 }
 func (b bitlist8) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist4 []byte
 
-func (*bitlist4) Limit() uint64 { return 4 }
+func (*bitlist4) Limit() uint64   { return 4 }
 func (b bitlist4) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 type bitlist3 []byte
 
-func (*bitlist3) Limit() uint64 { return 3 }
+func (*bitlist3) Limit() uint64   { return 3 }
 func (b bitlist3) BitLen() uint64 { return bitfields.BitlistLen(b) }
 
 // Some list types for testing
@@ -386,47 +386,47 @@ func init() {
 			),
 			getTyp((*VarTestStruct)(nil))},
 		{"empty list", ListA{}, "", h(zeroHashes[2], chunk("00000000")), getTyp((*ListA)(nil))},
-		{"empty var element list", ListB{}, "",h(zeroHashes[3], chunk("00000000")), getTyp((*ListB)(nil))},
+		{"empty var element list", ListB{}, "", h(zeroHashes[3], chunk("00000000")), getTyp((*ListB)(nil))},
 		{"var element list", ListB{
 			{A: 0xdead, B: []uint16{1, 2, 3}, C: 0x11},
 			{A: 0xbeef, B: []uint16{4, 5, 6}, C: 0x22}},
 			"08000000" + "15000000" +
 				"adde0700000011010002000300" +
 				"efbe0700000022040005000600",
-				h(h(
+			h(h(
+				h(
 					h(
-						h(
-							h(h(chunk("adde"), h(merge(chunk("010002000300"), zeroHashes[0:6]), chunk("03000000"))),
-								h(chunk("11"), chunk(""))),
-							h(h(chunk("efbe"), h(merge(chunk("040005000600"), zeroHashes[0:6]), chunk("03000000"))),
-								h(chunk("22"), chunk(""))),
-						),
-						zeroHashes[1],
+						h(h(chunk("adde"), h(merge(chunk("010002000300"), zeroHashes[0:6]), chunk("03000000"))),
+							h(chunk("11"), chunk(""))),
+						h(h(chunk("efbe"), h(merge(chunk("040005000600"), zeroHashes[0:6]), chunk("03000000"))),
+							h(chunk("22"), chunk(""))),
 					),
-					zeroHashes[2],
-				), chunk("02000000")), getTyp((*ListB)(nil))},
-		{"empty list fields", ListStruct{}, "08000000"+"08000000",
+					zeroHashes[1],
+				),
+				zeroHashes[2],
+			), chunk("02000000")), getTyp((*ListB)(nil))},
+		{"empty list fields", ListStruct{}, "08000000" + "08000000",
 			h(h(zeroHashes[2], chunk("")), h(zeroHashes[3], chunk(""))), getTyp((*ListStruct)(nil))},
 		{"empty last field", ListStruct{A: ListA{
 			smallTestStruct{A: 0xaa11, B: 0xbb22},
 			smallTestStruct{A: 0xcc33, B: 0xdd44},
 			smallTestStruct{A: 0x1234, B: 0x4567},
-		}}, "08000000"+"14000000"+("11aa22bb"+"33cc44dd"+"34126745"),
-		h(
+		}}, "08000000" + "14000000" + ("11aa22bb" + "33cc44dd" + "34126745"),
 			h(
 				h(
 					h(
-						h(chunk("11aa"), chunk("22bb")),
-						h(chunk("33cc"), chunk("44dd")),
+						h(
+							h(chunk("11aa"), chunk("22bb")),
+							h(chunk("33cc"), chunk("44dd")),
+						),
+						h(
+							h(chunk("3412"), chunk("6745")),
+							chunk(""),
+						),
 					),
-					h(
-						h(chunk("3412"), chunk("6745")),
-						chunk(""),
-					),
+					chunk("03000000"),
 				),
-				chunk("03000000"),
-			),
-			h(zeroHashes[3], chunk("")),
+				h(zeroHashes[3], chunk("")),
 			), getTyp((*ListStruct)(nil))},
 		{"complexTestStruct",
 			complexTestStruct{
