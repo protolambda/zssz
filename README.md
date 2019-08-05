@@ -30,6 +30,8 @@ Features:
 - Replaceable hash-function. Initialize the pre-computed zero-hashes with `InitZeroHashes(yourHashFn)`
   and then call `HashTreeRoot(yourHashFn, val, sszType)`. Zero-hashes default to SHA-256.
 - Passes the Eth 2.0 Static-SSZ tests, in the [ZRNT](https://github.com/protolambda/zrnt) test suite.
+- Ongoing real-world benchmarking effort for use in ZRNT.
+- No caching implemented, *yet*. Work in progress, in open collaboration with ETH 2.0 client implementers.
 
 Supported types
 - small basic-types (`bool`, `uint8`, `uint16`, `uint32`, `uint64`)
@@ -53,10 +55,6 @@ Possibly supported in future:
 - uint128/uint256
 - strings
 - partials
-
-TODO:
-- benchmarking. How does it compare to SSZ using reflection? And to the golang-serialization, Gob?
-- support for SSZ caching
 
 
 ## Usage
