@@ -43,6 +43,10 @@ func (v *SSZBasic) IsFixed() bool {
 	return true
 }
 
+func (v *SSZBasic) SizeOf(p unsafe.Pointer) uint64 {
+	return v.Length
+}
+
 func (v *SSZBasic) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	v.Encoder(eb, p)
 }

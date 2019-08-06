@@ -156,6 +156,16 @@ func (v *SSZContainer) IsFixed() bool {
 	return v.isFixedLen
 }
 
+func (v *SSZContainer) SizeOf(p unsafe.Pointer) uint64 {
+	out := v.fixedLen
+	for _, f := range v.Fields {
+		if !f.ssz.IsFixed() {
+			out += f.ssz.SizeOf(f.ptrFn(p))
+		}
+	}
+	return out
+}
+
 func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	for _, f := range v.Fields {
 		if f.ssz.IsFixed() {

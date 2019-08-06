@@ -12,17 +12,18 @@ import (
 )
 
 type SSZList struct {
-	alloc       ptrutil.SliceAllocationFn
-	elemMemSize uintptr
-	elemSSZ     SSZ
-	limit       uint64
-	byteLimit   uint64
-	maxFuzzLen  uint64
+	alloc         ptrutil.SliceAllocationFn
+	elemMemSize   uintptr
+	elemSSZ       SSZ
+	fixedElemSize uint64
+	limit         uint64
+	byteLimit     uint64
+	maxFuzzLen    uint64
 }
 
 func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 	if typ.Kind() != reflect.Slice {
-		return nil, fmt.Errorf("typ is not a dynamic-length array")
+		return nil, fmt.Errorf("typ %v is not a dynamic-length array", typ)
 	}
 	limit, err := ReadListLimit(typ)
 	if err != nil {
@@ -35,12 +36,21 @@ func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 	if err != nil {
 		return nil, err
 	}
+	var fixedElemSize, byteLimit uint64
+	if elemSSZ.IsFixed() {
+		fixedElemSize = elemSSZ.FixedLen()
+		byteLimit = limit * elemSSZ.FixedLen()
+	} else {
+		fixedElemSize = BYTES_PER_LENGTH_OFFSET
+		byteLimit = limit * elemSSZ.MaxLen()
+	}
 	res := &SSZList{
 		alloc:       ptrutil.MakeSliceAllocFn(typ),
 		elemMemSize: elemTyp.Size(),
 		elemSSZ:     elemSSZ,
+		fixedElemSize: fixedElemSize,
 		limit:       limit,
-		byteLimit:   limit * (BYTES_PER_LENGTH_OFFSET + elemSSZ.MaxLen()),
+		byteLimit:   byteLimit,
 		maxFuzzLen:  8 + (limit * elemSSZ.FuzzMaxLen()),
 	}
 	return res, nil
@@ -68,6 +78,22 @@ func (v *SSZList) FixedLen() uint64 {
 
 func (v *SSZList) IsFixed() bool {
 	return false
+}
+
+func (v *SSZList) SizeOf(p unsafe.Pointer) uint64 {
+	sh := ptrutil.ReadSliceHeader(p)
+	if v.elemSSZ.IsFixed() {
+		return uint64(sh.Len) * v.fixedElemSize
+	} else {
+		out := uint64(sh.Len) * BYTES_PER_LENGTH_OFFSET
+		memOffset := uintptr(0)
+		for i := 0; i < sh.Len; i++ {
+			elemPtr := unsafe.Pointer(uintptr(sh.Data) + memOffset)
+			memOffset += v.elemMemSize
+			out += v.elemSSZ.SizeOf(elemPtr)
+		}
+		return out
+	}
 }
 
 func (v *SSZList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {

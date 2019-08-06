@@ -26,6 +26,8 @@ type SSZ interface {
 	FixedLen() uint64
 	// If the type is fixed-size
 	IsFixed() bool
+	// Gets the encoded size of the data under the given pointer.
+	SizeOf(p unsafe.Pointer) uint64
 	// Reads object data from pointer, writes ssz-encoded data to EncodingBuffer
 	Encode(eb *EncodingBuffer, p unsafe.Pointer)
 	// Reads from input, populates object with read data

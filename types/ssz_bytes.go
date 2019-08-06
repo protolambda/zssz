@@ -53,6 +53,11 @@ func (v *SSZBytes) IsFixed() bool {
 	return false
 }
 
+func (v *SSZBytes) SizeOf(p unsafe.Pointer) uint64 {
+	sh := ptrutil.ReadSliceHeader(p)
+	return uint64(sh.Len)
+}
+
 func (v *SSZBytes) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	sh := ptrutil.ReadSliceHeader(p)
 	data := *(*[]byte)(unsafe.Pointer(sh))

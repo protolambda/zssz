@@ -55,6 +55,11 @@ func (v *SSZPtr) IsFixed() bool {
 	return v.elemSSZ.IsFixed()
 }
 
+func (v *SSZPtr) SizeOf(p unsafe.Pointer) uint64 {
+	innerPtr := unsafe.Pointer(*(*uintptr)(p))
+	return v.elemSSZ.SizeOf(innerPtr)
+}
+
 func (v *SSZPtr) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	innerPtr := unsafe.Pointer(*(*uintptr)(p))
 	v.elemSSZ.Encode(eb, innerPtr)

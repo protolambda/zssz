@@ -51,6 +51,10 @@ func (v *SSZBytesN) IsFixed() bool {
 	return true
 }
 
+func (v *SSZBytesN) SizeOf(p unsafe.Pointer) uint64 {
+	return v.length
+}
+
 func (v *SSZBytesN) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	sh := ptrutil.GetSliceHeader(p, v.length)
 	data := *(*[]byte)(unsafe.Pointer(sh))

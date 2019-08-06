@@ -65,6 +65,10 @@ func (v *SSZBasicVector) IsFixed() bool {
 	return true
 }
 
+func (v *SSZBasicVector) SizeOf(p unsafe.Pointer) uint64 {
+	return v.byteLen
+}
+
 func (v *SSZBasicVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	// we can just write the data as-is in a few contexts:
 	// - if we're in a little endian architecture

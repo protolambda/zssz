@@ -55,6 +55,14 @@ func DecodeFuzzBytes(r io.Reader, bytesLen uint64, val interface{}, sszTyp SSZ) 
 	return dr.Index(), nil
 }
 
+func SizeOf(val interface{}, sszTyp SSZ) uint64 {
+	p := ptrutil.IfacePtrToPtr(&val)
+	out := sszTyp.SizeOf(p)
+	// make sure the data of the object is kept around up to this point.
+	runtime.KeepAlive(&val)
+	return out
+}
+
 func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	eb := GetPooledBuffer()
 	defer ReleasePooledBuffer(eb)

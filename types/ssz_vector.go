@@ -85,8 +85,23 @@ func (v *SSZVector) IsFixed() bool {
 	return v.isFixedLen
 }
 
+func (v *SSZVector) SizeOf(p unsafe.Pointer) uint64 {
+	if v.IsFixed() {
+		return v.fixedLen
+	} else {
+		out := v.fixedLen
+		memOffset := uintptr(0)
+		for i := uint64(0); i < v.length; i++ {
+			elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
+			memOffset += v.elemMemSize
+			out += v.elemSSZ.SizeOf(elemPtr)
+		}
+		return out
+	}
+}
+
 func (v *SSZVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
-	if v.elemSSZ.IsFixed() {
+	if v.IsFixed() {
 		EncodeFixedSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
 	} else {
 		EncodeVarSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
@@ -94,7 +109,7 @@ func (v *SSZVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 }
 
 func (v *SSZVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	if v.elemSSZ.IsFixed() {
+	if v.IsFixed() {
 		return DecodeFixedSeries(v.elemSSZ.Decode, v.length, v.elemMemSize, dr, p)
 	} else {
 		if dr.IsFuzzMode() {

@@ -612,6 +612,10 @@ func TestEncode(t *testing.T) {
 			if res := fmt.Sprintf("%x", data); res != tt.hex {
 				t.Fatalf("encoded different data:\n     got %s\nexpected %s", res, tt.hex)
 			}
+			if size := SizeOf(tt.value, sszTyp); uint64(len(data)) != size {
+				t.Errorf("encoded output does not match expected size:" +
+					" len(data): %d but expected: %d", len(data), size)
+			}
 		})
 	}
 }

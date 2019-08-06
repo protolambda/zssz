@@ -72,6 +72,11 @@ func (v *SSZBasicList) IsFixed() bool {
 	return false
 }
 
+func (v *SSZBasicList) SizeOf(p unsafe.Pointer) uint64 {
+	sh := ptrutil.ReadSliceHeader(p)
+	return uint64(sh.Len)*v.elemSSZ.Length
+}
+
 func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	sh := ptrutil.ReadSliceHeader(p)
 
