@@ -9,24 +9,30 @@ import (
 )
 
 // pointer must point to start of the series contents
-func EncodeVarSeries(encFn EncoderFn, length uint64, elemMemSize uintptr, eb *EncodingBuffer, p unsafe.Pointer) {
+func EncodeVarSeries(encFn EncoderFn, sizeFn SizeFn, length uint64, elemMemSize uintptr, eb *EncodingBuffer, p unsafe.Pointer) {
+	// the previous offset, to calculate a new offset from, starting after the fixed data.
+	prevOffset := BYTES_PER_LENGTH_OFFSET * length
+	// span of the previous var-size element
+	prevSize := uint64(0)
+
+	// first, write all the offsets
 	memOffset := uintptr(0)
-	fixedLen := BYTES_PER_LENGTH_OFFSET * length
 	for i := uint64(0); i < length; i++ {
 		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
 		memOffset += elemMemSize
-		// write an offset to the fixed data, to find the dynamic data with as a reader
-		eb.WriteOffset(fixedLen)
 
-		// encode the dynamic data to a temporary buffer
-		temp := GetPooledBuffer()
-		encFn(temp, elemPtr)
-		// write it forward
-		eb.WriteForward(temp)
-
-		ReleasePooledBuffer(temp)
+		prevOffset = eb.WriteOffset(prevOffset, prevSize)
+		prevSize = sizeFn(elemPtr)
 	}
-	eb.FlushForward()
+
+	// write all the data contents referenced by the offsets.
+	memOffset = uintptr(0)
+	for i := uint64(0); i < length; i++ {
+		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
+		memOffset += elemMemSize
+
+		encFn(eb, elemPtr)
+	}
 }
 
 // pointer must point to start of the series contents

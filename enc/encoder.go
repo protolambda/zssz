@@ -7,39 +7,16 @@ import (
 	"unsafe"
 )
 
+type SizeFn func(pointer unsafe.Pointer) uint64
+
 type EncoderFn func(eb *EncodingBuffer, pointer unsafe.Pointer)
 
 type EncodingBuffer struct {
 	buffer       bytes.Buffer
-	forward      bytes.Buffer
-	forwardIndex uint64
 }
 
 func (eb *EncodingBuffer) Bytes() []byte {
 	return eb.buffer.Bytes()
-}
-
-func (eb *EncodingBuffer) Read(p []byte) (n int, err error) {
-	return eb.buffer.Read(p)
-}
-
-// Writes to the forward buffer.
-func (eb *EncodingBuffer) WriteForward(data io.Reader) {
-	n, err := eb.forward.ReadFrom(data)
-	if err != nil {
-		panic(err)
-	}
-	eb.forwardIndex += uint64(n)
-}
-
-// Writes the forward buffer to the main buffer, and resets the forward buffer.
-func (eb *EncodingBuffer) FlushForward() {
-	_, err := eb.buffer.ReadFrom(&eb.forward)
-	if err != nil {
-		panic(err)
-	}
-	eb.forward.Reset()
-	eb.forwardIndex = 0
 }
 
 // Write writes len(p) bytes from p to the underlying accumulated buffer.
@@ -57,23 +34,25 @@ func (eb *EncodingBuffer) WriteTo(w io.Writer) (n int64, err error) {
 	return eb.buffer.WriteTo(w)
 }
 
-// Writes an offset, calculated as index(forward) + fixedLen, to the end of the buffer
-func (eb *EncodingBuffer) WriteOffset(fixedLen uint64) {
+// Writes an offset for an element
+func (eb *EncodingBuffer) WriteOffset(prevOffset uint64, elemLen uint64) uint64 {
 	tmp := make([]byte, 4, 4)
-	if fixedLen >= (uint64(1) << 32) {
-		panic("cannot write offset with invalid fixed-length starting point")
+	if prevOffset >= (uint64(1) << 32) {
+		panic("cannot write offset with invalid previous offset")
 	}
-	offset := eb.forwardIndex + fixedLen
+	if elemLen >= (uint64(1) << 32) {
+		panic("cannot write offset with invalid element size")
+	}
+	offset := prevOffset + elemLen
 	if offset >= (uint64(1) << 32) {
 		panic("offset too large, not uint32")
 	}
 	binary.LittleEndian.PutUint32(tmp, uint32(offset))
 	eb.buffer.Write(tmp)
+	return offset
 }
 
 // Empties the buffers used
 func (eb *EncodingBuffer) Reset() {
 	eb.buffer.Reset()
-	eb.forward.Reset()
-	eb.forwardIndex = 0
 }

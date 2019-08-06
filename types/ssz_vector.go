@@ -104,7 +104,7 @@ func (v *SSZVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	if v.IsFixed() {
 		EncodeFixedSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
 	} else {
-		EncodeVarSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
+		EncodeVarSeries(v.elemSSZ.Encode, v.elemSSZ.SizeOf, v.length, v.elemMemSize, eb, p)
 	}
 }
 

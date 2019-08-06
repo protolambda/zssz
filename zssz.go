@@ -10,6 +10,7 @@ import (
 	"io"
 	"reflect"
 	"runtime"
+	"sync"
 )
 
 func Decode(r io.Reader, bytesLen uint64, val interface{}, sszTyp SSZ) error {
@@ -62,6 +63,23 @@ func SizeOf(val interface{}, sszTyp SSZ) uint64 {
 	runtime.KeepAlive(&val)
 	return out
 }
+
+// get a cleaned buffer from the pool
+func GetPooledBuffer() *EncodingBuffer {
+	eb := bufferPool.Get().(*EncodingBuffer)
+	eb.Reset()
+	return eb
+}
+
+func ReleasePooledBuffer(eb *EncodingBuffer) {
+	bufferPool.Put(eb)
+}
+
+// Encoding Buffers are pooled.
+var bufferPool = sync.Pool{
+	New: func() interface{} { return &EncodingBuffer{} },
+}
+
 
 func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
 	eb := GetPooledBuffer()

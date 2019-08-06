@@ -101,7 +101,7 @@ func (v *SSZList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	if v.elemSSZ.IsFixed() {
 		EncodeFixedSeries(v.elemSSZ.Encode, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
 	} else {
-		EncodeVarSeries(v.elemSSZ.Encode, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
+		EncodeVarSeries(v.elemSSZ.Encode, v.elemSSZ.SizeOf, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
 	}
 }
 

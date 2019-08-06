@@ -167,27 +167,25 @@ func (v *SSZContainer) SizeOf(p unsafe.Pointer) uint64 {
 }
 
 func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+	// the previous offset, to calculate a new offset from, starting after the fixed data.
+	prevOffset := v.fixedLen
+	// span of the previous var-size element
+	prevSize := uint64(0)
 	for _, f := range v.Fields {
 		if f.ssz.IsFixed() {
 			f.ssz.Encode(eb, f.ptrFn(p))
 		} else {
-			// write an offset to the fixed data, to find the dynamic data with as a reader
-			eb.WriteOffset(v.fixedLen)
-
-			// encode the dynamic data to a temporary buffer
-			temp := GetPooledBuffer()
-			f.ssz.Encode(temp, f.ptrFn(p))
-			// write it forward
-			eb.WriteForward(temp)
-
-			ReleasePooledBuffer(temp)
+			prevOffset = eb.WriteOffset(prevOffset, prevSize)
+			prevSize = f.ssz.SizeOf(f.ptrFn(p))
 		}
 	}
-	// Only flush if we need to.
-	// If not, forward can actually be filled with data from the parent container, and should not be flushed.
+	// Only iterate over and write dynamic parts if we need to.
 	if !v.IsFixed() {
-		// All the dynamic data is appended to the fixed data
-		eb.FlushForward()
+		for _, f := range v.Fields {
+			if !f.ssz.IsFixed() {
+				f.ssz.Encode(eb, f.ptrFn(p))
+			}
+		}
 	}
 }
 
