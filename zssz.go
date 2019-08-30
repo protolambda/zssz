@@ -10,7 +10,6 @@ import (
 	"io"
 	"reflect"
 	"runtime"
-	"sync"
 )
 
 func Decode(r io.Reader, bytesLen uint64, val interface{}, sszTyp SSZ) error {
@@ -64,36 +63,16 @@ func SizeOf(val interface{}, sszTyp SSZ) uint64 {
 	return out
 }
 
-// get a cleaned buffer from the pool
-func GetPooledBuffer() *EncodingBuffer {
-	eb := bufferPool.Get().(*EncodingBuffer)
-	eb.Reset()
-	return eb
-}
-
-func ReleasePooledBuffer(eb *EncodingBuffer) {
-	bufferPool.Put(eb)
-}
-
-// Encoding Buffers are pooled.
-var bufferPool = sync.Pool{
-	New: func() interface{} { return &EncodingBuffer{} },
-}
-
-
-func Encode(w io.Writer, val interface{}, sszTyp SSZ) error {
-	eb := GetPooledBuffer()
-	defer ReleasePooledBuffer(eb)
+func Encode(w io.Writer, val interface{}, sszTyp SSZ) (n int, err error) {
+	ew := NewEncodingWriter(w)
 
 	p := ptrutil.IfacePtrToPtr(&val)
-	sszTyp.Encode(eb, p)
-
-	_, err := eb.WriteTo(w)
+	err = sszTyp.Encode(ew, p)
 
 	// make sure the data of the object is kept around up to this point.
 	runtime.KeepAlive(&val)
 
-	return err
+	return ew.Written(), err
 }
 
 func HashTreeRoot(h HashFn, val interface{}, sszTyp SSZ) [32]byte {

@@ -47,8 +47,8 @@ func (v *SSZBasic) SizeOf(p unsafe.Pointer) uint64 {
 	return v.Length
 }
 
-func (v *SSZBasic) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
-	v.Encoder(eb, p)
+func (v *SSZBasic) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
+	return v.Encoder(eb, p)
 }
 
 func (v *SSZBasic) Decode(dr *DecodingReader, p unsafe.Pointer) error {
@@ -61,8 +61,8 @@ func (v *SSZBasic) HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte {
 
 var sszBool = &SSZBasic{
 	Length: 1,
-	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
-		eb.WriteByte(*(*byte)(p))
+	Encoder: func(eb *EncodingWriter, p unsafe.Pointer) error {
+		return eb.WriteByte(*(*byte)(p))
 	},
 	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
 		b, err := dr.ReadByte()
@@ -93,8 +93,8 @@ var sszBool = &SSZBasic{
 
 var sszUint8 = &SSZBasic{
 	Length: 1,
-	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
-		eb.WriteByte(*(*byte)(p))
+	Encoder: func(eb *EncodingWriter, p unsafe.Pointer) error {
+		return eb.WriteByte(*(*byte)(p))
 	},
 	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
 		b, err := dr.ReadByte()
@@ -112,10 +112,10 @@ var sszUint8 = &SSZBasic{
 
 var sszUint16 = &SSZBasic{
 	Length: 2,
-	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
+	Encoder: func(eb *EncodingWriter, p unsafe.Pointer) error {
 		v := [2]byte{}
 		binary.LittleEndian.PutUint16(v[:], *(*uint16)(p))
-		eb.Write(v[:])
+		return eb.Write(v[:])
 	},
 	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
 		v, err := dr.ReadUint16()
@@ -133,10 +133,10 @@ var sszUint16 = &SSZBasic{
 
 var sszUint32 = &SSZBasic{
 	Length: 4,
-	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
+	Encoder: func(eb *EncodingWriter, p unsafe.Pointer) error {
 		v := [4]byte{}
 		binary.LittleEndian.PutUint32(v[:], *(*uint32)(p))
-		eb.Write(v[:])
+		return eb.Write(v[:])
 	},
 	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
 		v, err := dr.ReadUint32()
@@ -154,10 +154,10 @@ var sszUint32 = &SSZBasic{
 
 var sszUint64 = &SSZBasic{
 	Length: 8,
-	Encoder: func(eb *EncodingBuffer, p unsafe.Pointer) {
+	Encoder: func(eb *EncodingWriter, p unsafe.Pointer) error {
 		v := [8]byte{}
 		binary.LittleEndian.PutUint64(v[:], *(*uint64)(p))
-		eb.Write(v[:])
+		return eb.Write(v[:])
 	},
 	Decoder: func(dr *DecodingReader, p unsafe.Pointer) error {
 		v, err := dr.ReadUint64()

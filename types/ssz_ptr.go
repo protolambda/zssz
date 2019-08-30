@@ -60,9 +60,9 @@ func (v *SSZPtr) SizeOf(p unsafe.Pointer) uint64 {
 	return v.elemSSZ.SizeOf(innerPtr)
 }
 
-func (v *SSZPtr) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+func (v *SSZPtr) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	innerPtr := unsafe.Pointer(*(*uintptr)(p))
-	v.elemSSZ.Encode(eb, innerPtr)
+	return v.elemSSZ.Encode(eb, innerPtr)
 }
 
 func (v *SSZPtr) Decode(dr *DecodingReader, p unsafe.Pointer) error {

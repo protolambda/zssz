@@ -45,13 +45,13 @@ func NewSSZList(factory SSZFactoryFn, typ reflect.Type) (*SSZList, error) {
 		byteLimit = limit * elemSSZ.MaxLen()
 	}
 	res := &SSZList{
-		alloc:       ptrutil.MakeSliceAllocFn(typ),
-		elemMemSize: elemTyp.Size(),
-		elemSSZ:     elemSSZ,
+		alloc:         ptrutil.MakeSliceAllocFn(typ),
+		elemMemSize:   elemTyp.Size(),
+		elemSSZ:       elemSSZ,
 		fixedElemSize: fixedElemSize,
-		limit:       limit,
-		byteLimit:   byteLimit,
-		maxFuzzLen:  8 + (limit * elemSSZ.FuzzMaxLen()),
+		limit:         limit,
+		byteLimit:     byteLimit,
+		maxFuzzLen:    8 + (limit * elemSSZ.FuzzMaxLen()),
 	}
 	return res, nil
 }
@@ -96,12 +96,12 @@ func (v *SSZList) SizeOf(p unsafe.Pointer) uint64 {
 	}
 }
 
-func (v *SSZList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+func (v *SSZList) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	sh := ptrutil.ReadSliceHeader(p)
 	if v.elemSSZ.IsFixed() {
-		EncodeFixedSeries(v.elemSSZ.Encode, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
+		return EncodeFixedSeries(v.elemSSZ.Encode, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
 	} else {
-		EncodeVarSeries(v.elemSSZ.Encode, v.elemSSZ.SizeOf, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
+		return EncodeVarSeries(v.elemSSZ.Encode, v.elemSSZ.SizeOf, uint64(sh.Len), v.elemMemSize, eb, sh.Data)
 	}
 }
 

@@ -100,11 +100,11 @@ func (v *SSZVector) SizeOf(p unsafe.Pointer) uint64 {
 	}
 }
 
-func (v *SSZVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+func (v *SSZVector) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	if v.IsFixed() {
-		EncodeFixedSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
+		return EncodeFixedSeries(v.elemSSZ.Encode, v.length, v.elemMemSize, eb, p)
 	} else {
-		EncodeVarSeries(v.elemSSZ.Encode, v.elemSSZ.SizeOf, v.length, v.elemMemSize, eb, p)
+		return EncodeVarSeries(v.elemSSZ.Encode, v.elemSSZ.SizeOf, v.length, v.elemMemSize, eb, p)
 	}
 }
 

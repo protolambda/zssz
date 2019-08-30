@@ -58,10 +58,10 @@ func (v *SSZBytes) SizeOf(p unsafe.Pointer) uint64 {
 	return uint64(sh.Len)
 }
 
-func (v *SSZBytes) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+func (v *SSZBytes) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	sh := ptrutil.ReadSliceHeader(p)
 	data := *(*[]byte)(unsafe.Pointer(sh))
-	eb.Write(data)
+	return eb.Write(data)
 }
 
 func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {

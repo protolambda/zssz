@@ -28,8 +28,9 @@ type SSZ interface {
 	IsFixed() bool
 	// Gets the encoded size of the data under the given pointer.
 	SizeOf(p unsafe.Pointer) uint64
-	// Reads object data from pointer, writes ssz-encoded data to EncodingBuffer
-	Encode(eb *EncodingBuffer, p unsafe.Pointer)
+	// Reads object data from pointer, writes ssz-encoded data to EncodingWriter
+	// Returns (n, err), forwarded from the io.Writer being encoded into.
+	Encode(eb *EncodingWriter, p unsafe.Pointer) error
 	// Reads from input, populates object with read data
 	Decode(dr *DecodingReader, p unsafe.Pointer) error
 	// Hashes the object read at the given pointer

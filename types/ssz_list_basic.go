@@ -74,19 +74,19 @@ func (v *SSZBasicList) IsFixed() bool {
 
 func (v *SSZBasicList) SizeOf(p unsafe.Pointer) uint64 {
 	sh := ptrutil.ReadSliceHeader(p)
-	return uint64(sh.Len)*v.elemSSZ.Length
+	return uint64(sh.Len) * v.elemSSZ.Length
 }
 
-func (v *SSZBasicList) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+func (v *SSZBasicList) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	sh := ptrutil.ReadSliceHeader(p)
 
 	// we can just write the data as-is in a few contexts:
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		LittleEndianBasicSeriesEncode(eb, sh.Data, uint64(sh.Len)*v.elemSSZ.Length)
+		return LittleEndianBasicSeriesEncode(eb, sh.Data, uint64(sh.Len)*v.elemSSZ.Length)
 	} else {
-		EncodeFixedSeries(v.elemSSZ.Encoder, uint64(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
+		return EncodeFixedSeries(v.elemSSZ.Encoder, uint64(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
 	}
 }
 

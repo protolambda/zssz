@@ -9,13 +9,16 @@ import (
 	"unsafe"
 )
 
-func EncodeFixedSeries(encFn EncoderFn, length uint64, elemMemSize uintptr, eb *EncodingBuffer, p unsafe.Pointer) {
+func EncodeFixedSeries(encFn EncoderFn, length uint64, elemMemSize uintptr, eb *EncodingWriter, p unsafe.Pointer) error {
 	memOffset := uintptr(0)
 	for i := uint64(0); i < length; i++ {
 		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
 		memOffset += elemMemSize
-		encFn(eb, elemPtr)
+		if err := encFn(eb, elemPtr); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func DecodeFixedSeries(decFn DecoderFn, length uint64, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {

@@ -166,16 +166,22 @@ func (v *SSZContainer) SizeOf(p unsafe.Pointer) uint64 {
 	return out
 }
 
-func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+func (v *SSZContainer) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	// the previous offset, to calculate a new offset from, starting after the fixed data.
 	prevOffset := v.fixedLen
 	// span of the previous var-size element
 	prevSize := uint64(0)
 	for _, f := range v.Fields {
 		if f.ssz.IsFixed() {
-			f.ssz.Encode(eb, f.ptrFn(p))
+			if err := f.ssz.Encode(eb, f.ptrFn(p)); err != nil {
+				return err
+			}
 		} else {
-			prevOffset = eb.WriteOffset(prevOffset, prevSize)
+			if offset, err := eb.WriteOffset(prevOffset, prevSize); err != nil {
+				return err
+			} else {
+				prevOffset = offset
+			}
 			prevSize = f.ssz.SizeOf(f.ptrFn(p))
 		}
 	}
@@ -183,10 +189,13 @@ func (v *SSZContainer) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
 	if !v.IsFixed() {
 		for _, f := range v.Fields {
 			if !f.ssz.IsFixed() {
-				f.ssz.Encode(eb, f.ptrFn(p))
+				if err := f.ssz.Encode(eb, f.ptrFn(p)); err != nil {
+					return err
+				}
 			}
 		}
 	}
+	return nil
 }
 
 func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {

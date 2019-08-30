@@ -602,8 +602,8 @@ func TestEncode(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := Encode(bufWriter, tt.value, sszTyp); err != nil {
-				t.Fatal(err)
+			if n, err := Encode(bufWriter, tt.value, sszTyp); err != nil {
+				t.Fatalf("encoding failed, wrote to byte %d, err: %v", n, err)
 			}
 			if err := bufWriter.Flush(); err != nil {
 				t.Fatal(err)
@@ -613,7 +613,7 @@ func TestEncode(t *testing.T) {
 				t.Fatalf("encoded different data:\n     got %s\nexpected %s", res, tt.hex)
 			}
 			if size := SizeOf(tt.value, sszTyp); uint64(len(data)) != size {
-				t.Errorf("encoded output does not match expected size:" +
+				t.Errorf("encoded output does not match expected size:"+
 					" len(data): %d but expected: %d", len(data), size)
 			}
 		})

@@ -69,14 +69,14 @@ func (v *SSZBasicVector) SizeOf(p unsafe.Pointer) uint64 {
 	return v.byteLen
 }
 
-func (v *SSZBasicVector) Encode(eb *EncodingBuffer, p unsafe.Pointer) {
+func (v *SSZBasicVector) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	// we can just write the data as-is in a few contexts:
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		LittleEndianBasicSeriesEncode(eb, p, v.byteLen)
+		return LittleEndianBasicSeriesEncode(eb, p, v.byteLen)
 	} else {
-		EncodeFixedSeries(v.elemSSZ.Encoder, v.length, uintptr(v.elemSSZ.Length), eb, p)
+		return EncodeFixedSeries(v.elemSSZ.Encoder, v.length, uintptr(v.elemSSZ.Length), eb, p)
 	}
 }
 

@@ -11,10 +11,10 @@ import (
 )
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
-func LittleEndianBasicSeriesEncode(eb *EncodingBuffer, p unsafe.Pointer, bytesLen uint64) {
+func LittleEndianBasicSeriesEncode(eb *EncodingWriter, p unsafe.Pointer, bytesLen uint64) error {
 	bytesSh := ptrutil.GetSliceHeader(p, bytesLen)
 	data := *(*[]byte)(unsafe.Pointer(bytesSh))
-	eb.Write(data)
+	return eb.Write(data)
 }
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte

@@ -9,7 +9,7 @@ import (
 )
 
 // pointer must point to start of the series contents
-func EncodeVarSeries(encFn EncoderFn, sizeFn SizeFn, length uint64, elemMemSize uintptr, eb *EncodingBuffer, p unsafe.Pointer) {
+func EncodeVarSeries(encFn EncoderFn, sizeFn SizeFn, length uint64, elemMemSize uintptr, eb *EncodingWriter, p unsafe.Pointer) error {
 	// the previous offset, to calculate a new offset from, starting after the fixed data.
 	prevOffset := BYTES_PER_LENGTH_OFFSET * length
 	// span of the previous var-size element
@@ -21,7 +21,12 @@ func EncodeVarSeries(encFn EncoderFn, sizeFn SizeFn, length uint64, elemMemSize 
 		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
 		memOffset += elemMemSize
 
-		prevOffset = eb.WriteOffset(prevOffset, prevSize)
+		if offset, err := eb.WriteOffset(prevOffset, prevSize); err != nil {
+			return err
+		} else {
+			prevOffset = offset
+		}
+
 		prevSize = sizeFn(elemPtr)
 	}
 
@@ -31,8 +36,11 @@ func EncodeVarSeries(encFn EncoderFn, sizeFn SizeFn, length uint64, elemMemSize 
 		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
 		memOffset += elemMemSize
 
-		encFn(eb, elemPtr)
+		if err := encFn(eb, elemPtr); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // pointer must point to start of the series contents
