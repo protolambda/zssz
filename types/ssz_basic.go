@@ -6,6 +6,7 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	. "github.com/protolambda/zssz/pretty"
 	"reflect"
 	"unsafe"
 )
@@ -13,10 +14,11 @@ import (
 type BasicHtrFn func(pointer unsafe.Pointer) [32]byte
 
 type SSZBasic struct {
-	Length  uint64
-	Encoder EncoderFn
-	Decoder DecoderFn
-	HTR     BasicHtrFn
+	Length   uint64
+	Encoder  EncoderFn
+	Decoder  DecoderFn
+	HTR      BasicHtrFn
+	PrettyFn PrettyFn
 }
 
 func (v *SSZBasic) FuzzMinLen() uint64 {
@@ -59,6 +61,10 @@ func (v *SSZBasic) HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte {
 	return v.HTR(pointer)
 }
 
+func (v *SSZBasic) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+	v.PrettyFn(indent, w, p)
+}
+
 var sszBool = &SSZBasic{
 	Length: 1,
 	Encoder: func(eb *EncodingWriter, p unsafe.Pointer) error {
@@ -89,6 +95,14 @@ var sszBool = &SSZBasic{
 		out[0] = *(*byte)(p)
 		return
 	},
+	PrettyFn: func(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+		w.WriteIndent(indent)
+		if *(*bool)(p) {
+			w.Write("True")
+		} else {
+			w.Write("False")
+		}
+	},
 }
 
 var sszUint8 = &SSZBasic{
@@ -107,6 +121,10 @@ var sszUint8 = &SSZBasic{
 	HTR: func(p unsafe.Pointer) (out [32]byte) {
 		out[0] = *(*byte)(p)
 		return
+	},
+	PrettyFn: func(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+		w.WriteIndent(indent)
+		w.Write(fmt.Sprintf("0x%02x", *(*byte)(p)))
 	},
 }
 
@@ -129,6 +147,14 @@ var sszUint16 = &SSZBasic{
 		binary.LittleEndian.PutUint16(out[:], *(*uint16)(p))
 		return
 	},
+	PrettyFn: func(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+		w.WriteIndent(indent)
+		if *(*uint16)(p) == ^uint16(0) {
+			w.Write("0xFFFF")
+		} else {
+			w.Write(fmt.Sprintf("%d", *(*uint16)(p)))
+		}
+	},
 }
 
 var sszUint32 = &SSZBasic{
@@ -150,6 +176,14 @@ var sszUint32 = &SSZBasic{
 		binary.LittleEndian.PutUint32(out[:], *(*uint32)(p))
 		return
 	},
+	PrettyFn: func(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+		w.WriteIndent(indent)
+		if *(*uint32)(p) == ^uint32(0) {
+			w.Write("0xFFFFFFFF")
+		} else {
+			w.Write(fmt.Sprintf("%d", *(*uint32)(p)))
+		}
+	},
 }
 
 var sszUint64 = &SSZBasic{
@@ -170,6 +204,14 @@ var sszUint64 = &SSZBasic{
 	HTR: func(p unsafe.Pointer) (out [32]byte) {
 		binary.LittleEndian.PutUint64(out[:], *(*uint64)(p))
 		return
+	},
+	PrettyFn: func(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+		w.WriteIndent(indent)
+		if *(*uint64)(p) == ^uint64(0) {
+			w.Write("0xFFFFFFFFFFFFFFFF")
+		} else {
+			w.Write(fmt.Sprintf("%d", *(*uint64)(p)))
+		}
 	},
 }
 

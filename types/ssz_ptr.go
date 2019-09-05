@@ -5,6 +5,7 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	. "github.com/protolambda/zssz/pretty"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
@@ -73,4 +74,14 @@ func (v *SSZPtr) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 func (v *SSZPtr) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	innerPtr := unsafe.Pointer(*(*uintptr)(p))
 	return v.elemSSZ.HashTreeRoot(h, innerPtr)
+}
+
+func (v *SSZPtr) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+	innerPtr := unsafe.Pointer(*(*uintptr)(p))
+	if innerPtr == nil {
+		w.WriteIndent(indent)
+		w.Write("null")
+	} else {
+		v.elemSSZ.Pretty(indent, w, innerPtr)
+	}
 }

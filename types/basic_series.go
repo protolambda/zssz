@@ -103,3 +103,12 @@ func BigEndianBasicSeriesHTR(h HashFn, p unsafe.Pointer, bytesLen uint64, bytesL
 	leafLimit := (bytesLimit + 31) >> 5
 	return merkle.Merkleize(h, leafCount, leafLimit, leaf)
 }
+
+func CallSeries(fn func(i uint64, p unsafe.Pointer), length uint64, elemMemSize uintptr, p unsafe.Pointer) {
+	memOffset := uintptr(0)
+	for i := uint64(0); i < length; i++ {
+		elemPtr := unsafe.Pointer(uintptr(p) + memOffset)
+		memOffset += elemMemSize
+		fn(i, elemPtr)
+	}
+}

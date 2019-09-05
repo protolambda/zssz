@@ -5,6 +5,7 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	. "github.com/protolambda/zssz/pretty"
 	"github.com/protolambda/zssz/util/endianness"
 	"reflect"
 	"unsafe"
@@ -94,4 +95,23 @@ func (v *SSZBasicVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	} else {
 		return BigEndianBasicSeriesHTR(h, p, v.byteLen, v.byteLen, uint8(v.elemSSZ.Length))
 	}
+}
+
+func (v *SSZBasicVector) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+	w.WriteIndent(indent)
+	w.Write("[\n")
+	w.WriteIndent(indent + 1)
+	CallSeries(func(i uint64, p unsafe.Pointer) {
+		v.elemSSZ.Pretty(0, w, p)
+		if i == v.length-1 {
+			w.Write("\n")
+		} else if i%(32/v.elemSSZ.Length) == 0 {
+			w.Write(",\n")
+			w.WriteIndent(indent + 1)
+		} else {
+			w.Write(", ")
+		}
+	}, v.length, uintptr(v.elemSSZ.Length), p)
+	w.WriteIndent(indent)
+	w.Write("]")
 }

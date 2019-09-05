@@ -6,6 +6,7 @@ import (
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
 	"github.com/protolambda/zssz/merkle"
+	. "github.com/protolambda/zssz/pretty"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
@@ -153,4 +154,21 @@ func (v *SSZList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		return r[:]
 	}
 	return h.MixIn(merkle.Merkleize(h, uint64(sh.Len), v.limit, leaf), uint64(sh.Len))
+}
+
+func (v *SSZList) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+	sh := ptrutil.ReadSliceHeader(p)
+	length := uint64(sh.Len)
+	w.WriteIndent(indent)
+	w.Write("[\n")
+	CallSeries(func(i uint64, p unsafe.Pointer) {
+		v.elemSSZ.Pretty(indent+1, w, p)
+		if i == length-1 {
+			w.Write("\n")
+		} else {
+			w.Write(",\n")
+		}
+	}, length, v.elemMemSize, sh.Data)
+	w.WriteIndent(indent)
+	w.Write("]")
 }

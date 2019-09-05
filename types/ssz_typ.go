@@ -4,12 +4,28 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	. "github.com/protolambda/zssz/pretty"
 	"unsafe"
 )
 
 // Note: when this is changed,
 //  don't forget to change the ReadOffset/WriteOffset calls that handle the length value in this allocated space.
 const BYTES_PER_LENGTH_OFFSET = 4
+
+type ChangeMode byte
+
+const (
+	Equal = iota
+	Modified
+	Added
+	Deleted
+)
+
+type Change struct {
+	Path        string
+	Mode        ChangeMode
+	Description string
+}
 
 type SSZ interface {
 	// The minimum length to read the object from fuzzing mode
@@ -35,6 +51,10 @@ type SSZ interface {
 	Decode(dr *DecodingReader, p unsafe.Pointer) error
 	// Hashes the object read at the given pointer
 	HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte
+	// Pretty print
+	Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer)
+	//// Diff two objects
+	//Diff(a unsafe.Pointer, b unsafe.Pointer) []Change
 }
 
 // SSZ definitions may also provide a way to compute a special hash-tree-root, for self-signed objects.

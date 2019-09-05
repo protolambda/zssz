@@ -7,6 +7,7 @@ import (
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
 	"github.com/protolambda/zssz/merkle"
+	. "github.com/protolambda/zssz/pretty"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"reflect"
 	"unsafe"
@@ -150,4 +151,11 @@ func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		return data[s:e]
 	}
 	return h.MixIn(merkle.Merkleize(h, leafCount, v.leafLimit, leaf), bitLen)
+}
+
+func (v *SSZBitlist) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+	w.WriteIndent(indent)
+	sh := ptrutil.ReadSliceHeader(p)
+	data := *(*[]byte)(unsafe.Pointer(sh))
+	w.Write(fmt.Sprintf("%08b", data))
 }

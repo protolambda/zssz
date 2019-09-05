@@ -6,6 +6,7 @@ import (
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
 	"github.com/protolambda/zssz/merkle"
+	. "github.com/protolambda/zssz/pretty"
 	"reflect"
 	"unsafe"
 )
@@ -128,4 +129,19 @@ func (v *SSZVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		return v[:]
 	}
 	return merkle.Merkleize(h, v.length, v.length, leaf)
+}
+
+func (v *SSZVector) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+	w.WriteIndent(indent)
+	w.Write("[\n")
+	CallSeries(func(i uint64, p unsafe.Pointer) {
+		v.elemSSZ.Pretty(indent+1, w, p)
+		if i == v.length-1 {
+			w.Write("\n")
+		} else {
+			w.Write(",\n")
+		}
+	}, v.length, v.elemMemSize, p)
+	w.WriteIndent(indent)
+	w.Write("]")
 }

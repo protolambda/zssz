@@ -5,6 +5,7 @@ import (
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
+	. "github.com/protolambda/zssz/pretty"
 	. "github.com/protolambda/zssz/types"
 	"github.com/protolambda/zssz/util/ptrutil"
 	"io"
@@ -73,6 +74,16 @@ func Encode(w io.Writer, val interface{}, sszTyp SSZ) (n int, err error) {
 	runtime.KeepAlive(&val)
 
 	return ew.Written(), err
+}
+
+func Pretty(w io.Writer, indent string, val interface{}, sszTyp SSZ) {
+	pw := NewPrettyWriter(w, indent)
+
+	p := ptrutil.IfacePtrToPtr(&val)
+	sszTyp.Pretty(0, pw, p)
+
+	// make sure the data of the object is kept around up to this point.
+	runtime.KeepAlive(&val)
 }
 
 func HashTreeRoot(h HashFn, val interface{}, sszTyp SSZ) [32]byte {

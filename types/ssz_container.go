@@ -6,6 +6,7 @@ import (
 	. "github.com/protolambda/zssz/enc"
 	. "github.com/protolambda/zssz/htr"
 	"github.com/protolambda/zssz/merkle"
+	. "github.com/protolambda/zssz/pretty"
 	"github.com/protolambda/zssz/util/tags"
 	"reflect"
 	"unsafe"
@@ -24,16 +25,18 @@ func (fn FieldPtrFn) WrapOffset(memOffset uintptr) FieldPtrFn {
 }
 
 type ContainerField struct {
-	ssz   SSZ
-	name  string
-	ptrFn FieldPtrFn
+	ssz      SSZ
+	name     string
+	pureName string
+	ptrFn    FieldPtrFn
 }
 
 func (c *ContainerField) Wrap(name string, memOffset uintptr) ContainerField {
 	return ContainerField{
-		ssz:   c.ssz,
-		name:  name + ">" + c.name,
-		ptrFn: c.ptrFn.WrapOffset(memOffset),
+		ssz:      c.ssz,
+		name:     name + ">" + c.name,
+		pureName: c.name,
+		ptrFn:    c.ptrFn.WrapOffset(memOffset),
 	}
 }
 
@@ -91,7 +94,7 @@ func getFields(factory SSZFactoryFn, f *reflect.StructField) (out []ContainerFie
 		}
 	}
 
-	out = append(out, ContainerField{ssz: fieldSSZ, name: f.Name, ptrFn: GetOffsetPtrFn(f.Offset)})
+	out = append(out, ContainerField{ssz: fieldSSZ, pureName: f.Name, name: f.Name, ptrFn: GetOffsetPtrFn(f.Offset)})
 	return
 }
 
@@ -338,4 +341,22 @@ func (v *SSZContainer) SigningRoot(h HashFn, p unsafe.Pointer) [32]byte {
 		leafCount--
 	}
 	return merkle.Merkleize(h, leafCount, leafCount, leaf)
+}
+
+func (v *SSZContainer) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer) {
+	w.WriteIndent(indent)
+	w.Write("{\n")
+	for i, f := range v.Fields {
+		w.WriteIndent(indent + 1)
+		w.Write(f.pureName)
+		w.Write(":\n")
+		f.ssz.Pretty(indent+3, w, f.ptrFn(p))
+		if i == len(v.Fields)-1 {
+			w.Write("\n")
+		} else {
+			w.Write(",\n")
+		}
+	}
+	w.WriteIndent(indent)
+	w.Write("}")
 }
