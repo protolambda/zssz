@@ -17,6 +17,7 @@ type SSZBasic struct {
 	Length   uint64
 	Encoder  EncoderFn
 	Decoder  DecoderFn
+	Verifier VerifyFn
 	HTR      BasicHtrFn
 	PrettyFn PrettyFn
 }
@@ -57,6 +58,10 @@ func (v *SSZBasic) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return v.Decoder(dr, p)
 }
 
+func (v *SSZBasic) Verify(dr *DecodingReader) error {
+	return v.Verifier(dr)
+}
+
 func (v *SSZBasic) HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte {
 	return v.HTR(pointer)
 }
@@ -91,6 +96,16 @@ var sszBool = &SSZBasic{
 			}
 		}
 	},
+	Verifier: func(dr *DecodingReader) error {
+		b, err := dr.ReadByte()
+		if err != nil {
+			return err
+		}
+		if b > 1 {
+			return fmt.Errorf("bool value is invalid")
+		}
+		return nil
+	},
 	HTR: func(p unsafe.Pointer) (out [32]byte) {
 		out[0] = *(*byte)(p)
 		return
@@ -118,6 +133,10 @@ var sszUint8 = &SSZBasic{
 		*(*byte)(p) = b
 		return nil
 	},
+	Verifier: func(dr *DecodingReader) error {
+		_, err := dr.Skip(1)
+		return err
+	},
 	HTR: func(p unsafe.Pointer) (out [32]byte) {
 		out[0] = *(*byte)(p)
 		return
@@ -142,6 +161,10 @@ var sszUint16 = &SSZBasic{
 		}
 		*(*uint16)(p) = v
 		return nil
+	},
+	Verifier: func(dr *DecodingReader) error {
+		_, err := dr.Skip(2)
+		return err
 	},
 	HTR: func(p unsafe.Pointer) (out [32]byte) {
 		binary.LittleEndian.PutUint16(out[:], *(*uint16)(p))
@@ -172,6 +195,10 @@ var sszUint32 = &SSZBasic{
 		*(*uint32)(p) = v
 		return nil
 	},
+	Verifier: func(dr *DecodingReader) error {
+		_, err := dr.Skip(4)
+		return err
+	},
 	HTR: func(p unsafe.Pointer) (out [32]byte) {
 		binary.LittleEndian.PutUint32(out[:], *(*uint32)(p))
 		return
@@ -200,6 +227,10 @@ var sszUint64 = &SSZBasic{
 		}
 		*(*uint64)(p) = v
 		return nil
+	},
+	Verifier: func(dr *DecodingReader) error {
+		_, err := dr.Skip(8)
+		return err
 	},
 	HTR: func(p unsafe.Pointer) (out [32]byte) {
 		binary.LittleEndian.PutUint64(out[:], *(*uint64)(p))

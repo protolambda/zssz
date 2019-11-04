@@ -103,24 +103,39 @@ func (v *SSZBitlist) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		// completely empty bitlists are invalid. Need a leading 1 bit.
 		byteLen += 1
 	} else {
-		byteLen = dr.Max() - dr.Index()
-	}
-	// there may not be more bytes than necessary for the N bits, +1 for the delimiting bit.
-	if byteLimitWithDelimiter := (v.bitLimit >> 3) + 1; byteLen > byteLimitWithDelimiter {
-		return fmt.Errorf("got %d bytes, expected no more than %d bytes for bitlist",
-			byteLen, byteLimitWithDelimiter)
+		byteLen = dr.GetBytesSpan()
 	}
 	ptrutil.BytesAllocFn(p, byteLen)
 	data := *(*[]byte)(p)
 	if _, err := dr.Read(data); err != nil {
 		return err
 	}
-	if dr.IsFuzzMode() && len(data) > 1 && data[len(data)-1] == 0 {
-		// last byte must not be 0 for bitlist to be valid
-		data[len(data)-1] = 1
+	if dr.IsFuzzMode() {
+		// mask last byte to stay within bit-limit
+		data[len(data)-1] &= (1 << (v.bitLimit + 1)) - 1
+		if data[len(data)-1] == 0 {
+			// last byte must not be 0 for bitlist to be valid
+			data[len(data)-1] = 1
+		}
 	}
 	// check if the data is a valid bitvector value (0 bits for unused bits)
-	return bitfields.BitlistCheck(data)
+	return bitfields.BitlistCheck(data, v.bitLimit)
+}
+
+func (v *SSZBitlist) Verify(dr *DecodingReader) error {
+	span := dr.GetBytesSpan()
+	if err := bitfields.BitlistCheckByteLen(span, v.bitLimit); err != nil {
+		return err
+	}
+	// 0 span is already checked by BitlistCheckByteLen
+	if _, err := dr.Skip(span - 1); err != nil {
+		return err
+	}
+	last, err := dr.ReadByte()
+	if err != nil {
+		return err
+	}
+	return bitfields.BitlistCheckLastByte(last, v.bitLimit-((span-1)<<3))
 }
 
 func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {

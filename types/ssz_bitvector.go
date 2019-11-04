@@ -90,6 +90,23 @@ func (v *SSZBitvector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return bitfields.BitvectorCheck(data, v.bitLen)
 }
 
+func (v *SSZBitvector) Verify(dr *DecodingReader) error {
+	if v.bitLen == 0 {
+		return nil
+	}
+	if v.byteLen > 1 {
+		_, err := dr.Skip(v.byteLen - 1)
+		if err != nil {
+			return err
+		}
+	}
+	last, err := dr.ReadByte()
+	if err != nil {
+		return err
+	}
+	return bitfields.BitvectorCheckLastByte(last, v.bitLen)
+}
+
 func (v *SSZBitvector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.GetSliceHeader(p, v.byteLen)
 	data := *(*[]byte)(unsafe.Pointer(sh))

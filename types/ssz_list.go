@@ -128,12 +128,11 @@ func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
 }
 
 func (v *SSZList) decode(dr *DecodingReader, p unsafe.Pointer) error {
-	bytesLen := dr.Max() - dr.Index()
 	if v.elemSSZ.IsFixed() {
-		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.limit, v.alloc, v.elemMemSize, dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), dr.GetBytesSpan(), v.limit, v.alloc, v.elemMemSize, dr, p)
 	} else {
 		// still pass the fixed length of the element, but just to check a minimum length requirement.
-		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.limit, v.alloc, v.elemMemSize, dr, p)
+		return DecodeVarSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), dr.GetBytesSpan(), v.limit, v.alloc, v.elemMemSize, dr, p)
 	}
 }
 
@@ -142,6 +141,14 @@ func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 		return v.decodeFuzzmode(dr, p)
 	} else {
 		return v.decode(dr, p)
+	}
+}
+
+func (v *SSZList) Verify(dr *DecodingReader) error {
+	if v.elemSSZ.IsFixed() {
+		return VerifyFixedSlice(v.elemSSZ.Verify, v.elemSSZ.FixedLen(), dr.GetBytesSpan(), v.limit, dr)
+	} else {
+		return VerifyVarSlice(v.elemSSZ.Verify, v.elemSSZ.FixedLen(), dr.GetBytesSpan(), v.limit, dr)
 	}
 }
 

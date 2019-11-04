@@ -656,6 +656,29 @@ func TestDecode(t *testing.T) {
 	}
 }
 
+func TestVerify(t *testing.T) {
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			sszTyp, err := SSZFactory(tt.typ)
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := hex.DecodeString(tt.hex)
+			if err != nil {
+				t.Fatal(err)
+			}
+			r := bytes.NewReader(data)
+			// For dynamic types, we need to pass the length of the message to the decoder.
+			// See SSZ-envelope discussion
+			bytesLen := uint64(len(tt.hex)) / 2
+
+			if err := Verify(r, bytesLen, sszTyp); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+}
+
 func TestHashTreeRoot(t *testing.T) {
 	var buf bytes.Buffer
 

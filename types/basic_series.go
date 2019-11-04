@@ -112,3 +112,23 @@ func CallSeries(fn func(i uint64, p unsafe.Pointer), length uint64, elemMemSize 
 		fn(i, elemPtr)
 	}
 }
+
+func BasicSeriesVerify(dr *DecodingReader, bytesLen uint64, bytesLimit uint64, isBoolElem bool) error {
+	if bytesLen > bytesLimit {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes", bytesLen, bytesLimit)
+	}
+	if isBoolElem {
+		for i := uint64(0); i < bytesLen; i++ {
+			if v, err := dr.ReadByte(); err != nil {
+				return err
+			} else if v > 1 {
+				return fmt.Errorf("byte %d in bool list is not a valid bool value: %d", i, v)
+			}
+		}
+	} else {
+		if _, err := dr.Skip(bytesLen); err != nil {
+			return err
+		}
+	}
+	return nil
+}

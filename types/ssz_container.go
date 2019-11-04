@@ -225,43 +225,41 @@ func (v *SSZContainer) decodeVarSizeFuzzmode(dr *DecodingReader, p unsafe.Pointe
 	return nil
 }
 
-func decodeOffsetElem(dr *DecodingReader, elemPtr unsafe.Pointer, decFn DecoderFn, expectedOffset uint64, scope uint64) error {
-	currentOffset := dr.Index()
-	if expectedOffset != currentOffset {
-		return fmt.Errorf("expected to be at %d bytes, but currently at %d", expectedOffset, currentOffset)
-	}
-	scoped, err := dr.Scope(scope)
-	if err != nil {
-		return err
-	}
-	if err := decFn(scoped, elemPtr); err != nil {
-		return err
-	}
-	dr.UpdateIndexFromScoped(scoped)
-	return nil
-}
-
-func (v *SSZContainer) decodeDynamicPart(dr *DecodingReader, p unsafe.Pointer, offsets []uint64) error {
+func (v *SSZContainer) decodeDynamicPart(dr *DecodingReader, offsets []uint64, fieldHandler func(dr *DecodingReader, f *ContainerField) error) error {
 	i := 0
-	for _, f := range v.Fields {
+	for fi := range v.Fields {
+		f := &v.Fields[fi]
 		// ignore fixed-size fields
 		if f.ssz.IsFixed() {
 			continue
 		}
 		// calculate the scope based on next offset, and max. value of this scope for the last value
 		var scope uint64
-		currentOffset := offsets[i]
-		if next := i + 1; next < len(offsets) {
-			if nextOffset := offsets[next]; nextOffset >= currentOffset {
-				scope = nextOffset - currentOffset
+		{
+			currentOffset := offsets[i]
+			if next := i + 1; next < len(offsets) {
+				if nextOffset := offsets[next]; nextOffset >= currentOffset {
+					scope = nextOffset - currentOffset
+				} else {
+					return fmt.Errorf("offset %d for field %s is invalid", i, f.name)
+				}
 			} else {
-				return fmt.Errorf("offset %d for field %s is invalid", i, f.name)
+				scope = dr.Max() - currentOffset
 			}
-		} else {
-			scope = dr.Max() - currentOffset
 		}
-		if err := decodeOffsetElem(dr, f.ptrFn(p), f.ssz.Decode, offsets[i], scope); err != nil {
-			return err
+		{
+			realOffset := dr.Index()
+			if expectedOffset := offsets[i]; expectedOffset != realOffset {
+				return fmt.Errorf("expected to be at %d bytes, but currently at %d", expectedOffset, realOffset)
+			}
+			scoped, err := dr.Scope(scope)
+			if err != nil {
+				return err
+			}
+			if err := fieldHandler(scoped, f); err != nil {
+				return err
+			}
+			dr.UpdateIndexFromScoped(scoped)
 		}
 		// go to next offset
 		i++
@@ -269,17 +267,18 @@ func (v *SSZContainer) decodeDynamicPart(dr *DecodingReader, p unsafe.Pointer, o
 	return nil
 }
 
-func (v *SSZContainer) decodeFixedPart(dr *DecodingReader, p unsafe.Pointer) ([]uint64, error) {
+func (v *SSZContainer) processFixedPart(dr *DecodingReader, fieldHandler func(f *ContainerField) error) ([]uint64, error) {
 	// technically we could also ignore offset correctness and skip ahead,
 	//  but we may want to enforce proper offsets.
 	offsets := make([]uint64, 0, v.offsetCount)
 	startIndex := dr.Index()
-	fixedI := uint64(dr.Index())
-	for _, f := range v.Fields {
+	fixedI := dr.Index()
+	for fi := range v.Fields {
+		f := &v.Fields[fi]
 		if f.ssz.IsFixed() {
 			fixedI += f.ssz.FixedLen()
 			// No need to redefine the scope for fixed-length SSZ objects.
-			if err := f.ssz.Decode(dr, f.ptrFn(p)); err != nil {
+			if err := fieldHandler(f); err != nil {
 				return nil, err
 			}
 		} else {
@@ -303,12 +302,15 @@ func (v *SSZContainer) decodeFixedPart(dr *DecodingReader, p unsafe.Pointer) ([]
 }
 
 func (v *SSZContainer) decodeVarSize(dr *DecodingReader, p unsafe.Pointer) error {
-	offsets, err := v.decodeFixedPart(dr, p)
+	offsets, err := v.processFixedPart(dr, func(f *ContainerField) error {
+		return f.ssz.Decode(dr, f.ptrFn(p))
+	})
 	if err != nil {
 		return err
 	}
-	// not really squashed, but now that we have the offsets, we can decode it like this.
-	return v.decodeDynamicPart(dr, p, offsets)
+	return v.decodeDynamicPart(dr, offsets, func(scopedDr *DecodingReader, f *ContainerField) error {
+		return f.ssz.Decode(scopedDr, f.ptrFn(p))
+	})
 }
 
 func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
@@ -317,6 +319,18 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	} else {
 		return v.decodeVarSize(dr, p)
 	}
+}
+
+func (v *SSZContainer) Verify(dr *DecodingReader) error {
+	offsets, err := v.processFixedPart(dr, func(f *ContainerField) error {
+		return f.ssz.Verify(dr)
+	})
+	if err != nil {
+		return err
+	}
+	return v.decodeDynamicPart(dr, offsets, func(scopedDr *DecodingReader, f *ContainerField) error {
+		return f.ssz.Verify(scopedDr)
+	})
 }
 
 func (v *SSZContainer) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {

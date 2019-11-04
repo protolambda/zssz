@@ -43,6 +43,38 @@ func EncodeVarSeries(encFn EncoderFn, sizeFn SizeFn, length uint64, elemMemSize 
 	return nil
 }
 
+func verifyVarSeriesFromOffsets(vFn VerifyFn, offsets []uint64, dr *DecodingReader) error {
+	for i := 0; i < len(offsets); i++ {
+		currentOffset := dr.Index()
+		if currentOffset != offsets[i] {
+			return fmt.Errorf("expected to read to data %d bytes, got to %d", offsets[i], currentOffset)
+		}
+		// calculate the scope based on next offset, and max. value of this scope for the last value
+		var scope uint64
+		if next := i + 1; next < len(offsets) {
+			if nextOffset := offsets[next]; nextOffset >= currentOffset {
+				scope = nextOffset - currentOffset
+			} else {
+				return fmt.Errorf("offset %d is invalid", i)
+			}
+		} else {
+			scope = dr.Max() - currentOffset
+		}
+		scoped, err := dr.Scope(scope)
+		if err != nil {
+			return err
+		}
+		if err := vFn(scoped); err != nil {
+			return err
+		}
+		dr.UpdateIndexFromScoped(scoped)
+	}
+	if i, m := dr.Index(), dr.Max(); i != m {
+		return fmt.Errorf("expected to finish reading the scope to max %d, got to %d", i, m)
+	}
+	return nil
+}
+
 // pointer must point to start of the series contents
 func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint64, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
 	memOffset := uintptr(0)
@@ -79,21 +111,28 @@ func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint64, elemMemSize u
 	return nil
 }
 
-// pointer must point to start of the series contents
-func DecodeVarSeries(decFn DecoderFn, length uint64, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
+func VerifyVarSeries(decFn VerifyFn, length uint64, dr *DecodingReader) error {
+	offsets, err := ReadVarSeriesOffsets(length, dr)
+	if err != nil {
+		return err
+	}
+	return verifyVarSeriesFromOffsets(decFn, offsets, dr)
+}
+
+func ReadVarSeriesOffsets(length uint64, dr *DecodingReader) ([]uint64, error) {
 	// empty series are easy, always nothing to read.
 	if length == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Read first offset, with this we can calculate the amount of expected offsets, i.e. the length of a slice.
 	firstOffset, err := dr.ReadOffset()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if derivedLen := firstOffset / BYTES_PER_LENGTH_OFFSET; length != derivedLen {
-		return fmt.Errorf("expected series of %d elements, got offset for %d elements", length, derivedLen)
+		return nil, fmt.Errorf("expected series of %d elements, got offset for %d elements", length, derivedLen)
 	}
 
 	// technically we could also ignore offset correctness and skip ahead,
@@ -107,11 +146,19 @@ func DecodeVarSeries(decFn DecoderFn, length uint64, elemMemSize uintptr, dr *De
 	for i := uint64(1); i < length; i++ {
 		offset, err := dr.ReadOffset()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		offsets = append(offsets, offset)
 	}
+	return offsets, nil
+}
 
+// pointer must point to start of the series contents
+func DecodeVarSeries(decFn DecoderFn, length uint64, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
+	offsets, err := ReadVarSeriesOffsets(length, dr)
+	if err != nil {
+		return err
+	}
 	return decodeVarSeriesFromOffsets(decFn, offsets, elemMemSize, dr, p)
 }
 
@@ -144,45 +191,35 @@ func DecodeVarSeriesFuzzMode(elem SSZ, length uint64, elemMemSize uintptr, dr *D
 	return nil
 }
 
-// pointer must point to the slice header to decode into
-// (new space is allocated for contents and bound to the slice header when necessary)
-func DecodeVarSlice(decFn DecoderFn, minElemLen uint64, bytesLen uint64, limit uint64,
-	alloc ptrutil.SliceAllocationFn, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
-
-	contentsPtr := p
-
+func ReadVarSliceOffsets(minElemLen uint64, bytesLen uint64, limit uint64, dr *DecodingReader) ([]uint64, error) {
 	// empty series are easy, always nothing to read.
 	if bytesLen == 0 {
-		return nil
+		return nil, nil
 	}
 
 	if startIndex := dr.Index(); startIndex != 0 {
-		return fmt.Errorf("non-empty dynamic-length series has invalid starting index: %d", startIndex)
+		return nil, fmt.Errorf("non-empty dynamic-length series has invalid starting index: %d", startIndex)
 	}
 
 	// Read first offset, with this we can calculate the amount of expected offsets, i.e. the length of a slice.
 	firstOffset, err := dr.ReadOffset()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if firstOffset > bytesLen || (firstOffset%BYTES_PER_LENGTH_OFFSET) != 0 {
-		return fmt.Errorf("non-empty dynamic-length series has invalid first offset: %d", firstOffset)
+		return nil, fmt.Errorf("non-empty dynamic-length series has invalid first offset: %d", firstOffset)
 	}
 
 	length := firstOffset / BYTES_PER_LENGTH_OFFSET
 
 	if length > limit {
-		return fmt.Errorf("got %d elements, expected no more than %d elements", length, limit)
+		return nil, fmt.Errorf("got %d elements, expected no more than %d elements", length, limit)
 	}
 
 	if maxLen, minLen := uint64(dr.Max()), uint64(minElemLen)*uint64(length); minLen > maxLen {
-		return fmt.Errorf("cannot fit %d elements of each a minimum size %d (%d total bytes) in %d bytes", length, minElemLen, minLen, maxLen)
+		return nil, fmt.Errorf("cannot fit %d elements of each a minimum size %d (%d total bytes) in %d bytes", length, minElemLen, minLen, maxLen)
 	}
-
-	// We don't want elements to be put in the slice header memory,
-	// instead, we allocate the slice data, and change the contents-pointer in the header.
-	contentsPtr = alloc(p, length)
 
 	offsets := make([]uint64, 0, length)
 
@@ -193,14 +230,40 @@ func DecodeVarSlice(decFn DecoderFn, minElemLen uint64, bytesLen uint64, limit u
 	for i := uint64(1); i < length; i++ {
 		offset, err := dr.ReadOffset()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		offsets = append(offsets, offset)
 	}
 
 	if expectedIndex, currentIndex := BYTES_PER_LENGTH_OFFSET*length, dr.Index(); currentIndex != expectedIndex {
-		return fmt.Errorf("expected to read to %d bytes, got to %d", expectedIndex, currentIndex)
+		return nil, fmt.Errorf("expected to read to %d bytes, got to %d", expectedIndex, currentIndex)
 	}
+
+	return offsets, nil
+}
+
+func VerifyVarSlice(vFn VerifyFn, minElemLen uint64, bytesLen uint64, limit uint64, dr *DecodingReader) error {
+	offsets, err := ReadVarSliceOffsets(minElemLen, bytesLen, limit, dr)
+	if err != nil {
+		return err
+	}
+
+	return verifyVarSeriesFromOffsets(vFn, offsets, dr)
+}
+
+// pointer must point to the slice header to decode into
+// (new space is allocated for contents and bound to the slice header when necessary)
+func DecodeVarSlice(decFn DecoderFn, minElemLen uint64, bytesLen uint64, limit uint64,
+	alloc ptrutil.SliceAllocationFn, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {
+
+	offsets, err := ReadVarSliceOffsets(minElemLen, bytesLen, limit, dr)
+	if err != nil {
+		return err
+	}
+
+	// We don't want elements to be put in the slice header memory,
+	// instead, we allocate the slice data, and change the contents-pointer in the header.
+	contentsPtr := alloc(p, uint64(len(offsets)))
 
 	return decodeVarSeriesFromOffsets(decFn, offsets, elemMemSize, dr, contentsPtr)
 }

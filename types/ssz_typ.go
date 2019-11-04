@@ -27,11 +27,14 @@ type Change struct {
 	Description string
 }
 
-type SSZ interface {
+type SSZFuzzInfo interface {
 	// The minimum length to read the object from fuzzing mode
 	FuzzMinLen() uint64
 	// The maximum length to read the object from fuzzing mode
 	FuzzMaxLen() uint64
+}
+
+type SSZInfo interface {
 	// The minimum length of the object.
 	// If the object is fixed-len, this should equal FixedLen()
 	MinLen() uint64
@@ -42,6 +45,11 @@ type SSZ interface {
 	FixedLen() uint64
 	// If the type is fixed-size
 	IsFixed() bool
+	// Verify the format of serialized data, without decoding the contents into memory
+	Verify(dr *DecodingReader) error
+}
+
+type SSZMemory interface {
 	// Gets the encoded size of the data under the given pointer.
 	SizeOf(p unsafe.Pointer) uint64
 	// Reads object data from pointer, writes ssz-encoded data to EncodingWriter
@@ -55,6 +63,12 @@ type SSZ interface {
 	Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer)
 	//// Diff two objects
 	//Diff(a unsafe.Pointer, b unsafe.Pointer) []Change
+}
+
+type SSZ interface {
+	SSZFuzzInfo
+	SSZInfo
+	SSZMemory
 }
 
 // SSZ definitions may also provide a way to compute a special hash-tree-root, for self-signed objects.

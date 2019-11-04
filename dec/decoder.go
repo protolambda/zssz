@@ -4,10 +4,12 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"unsafe"
 )
 
 type DecoderFn func(dr *DecodingReader, pointer unsafe.Pointer) error
+type VerifyFn func(dr *DecodingReader) error
 
 type DecodingReader struct {
 	input    io.Reader
@@ -55,6 +57,20 @@ func (dr *DecodingReader) checkedIndexUpdate(x uint64) (n int, err error) {
 	}
 	dr.i = v
 	return int(x), nil
+}
+
+func (dr *DecodingReader) Skip(count uint64) (int, error) {
+	if n, err := dr.checkedIndexUpdate(count); err != nil {
+		return n, err
+	}
+	switch r := dr.input.(type) {
+	case io.Seeker:
+		n, err := r.Seek(int64(count), io.SeekCurrent)
+		return int(n), err
+	default:
+		n, err := io.CopyN(ioutil.Discard, dr.input, int64(count))
+		return int(n), err
+	}
 }
 
 func (dr *DecodingReader) Read(p []byte) (int, error) {

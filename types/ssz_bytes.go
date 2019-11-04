@@ -80,7 +80,7 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 			length = x % span
 		}
 	} else {
-		length = dr.Max() - dr.Index()
+		length = dr.GetBytesSpan()
 	}
 	if length > v.limit {
 		return fmt.Errorf("got %d bytes, expected no more than %d bytes", length, v.limit)
@@ -88,6 +88,11 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	ptrutil.BytesAllocFn(p, length)
 	data := *(*[]byte)(p)
 	_, err := dr.Read(data)
+	return err
+}
+
+func (v *SSZBytes) Verify(dr *DecodingReader) error {
+	_, err := dr.Skip(dr.GetBytesSpan())
 	return err
 }
 

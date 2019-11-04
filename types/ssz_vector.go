@@ -121,6 +121,14 @@ func (v *SSZVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 }
 
+func (v *SSZVector) Verify(dr *DecodingReader) error {
+	if v.IsFixed() {
+		return VerifyFixedSeries(v.elemSSZ.Verify, v.length, dr)
+	} else {
+		return VerifyVarSeries(v.elemSSZ.Verify, v.length, dr)
+	}
+}
+
 func (v *SSZVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize

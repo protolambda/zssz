@@ -2,6 +2,7 @@ package bitfields
 
 import (
 	"errors"
+	"fmt"
 	"github.com/protolambda/zssz/lists"
 )
 
@@ -32,17 +33,37 @@ func BitlistLen(b []byte) uint64 {
 }
 
 // Helper function to implement Bitlist with.
-// Checks if b has the given length n in bits.
 // It checks if:
 //  0. the raw bitlist is not empty, there must be a 1 bit to determine the length.
 //  1. the bitlist has a leading 1 bit in the last byte to determine the length with.
-func BitlistCheck(b []byte) error {
-	if len(b) == 0 {
-		return errors.New("bitlist is missing length limit bit")
+//  2. if b has no more than given limit in bits.
+func BitlistCheck(b []byte, limit uint64) error {
+	byteLen := uint64(len(b))
+	if err := BitlistCheckByteLen(byteLen, limit); err != nil {
+		return err
 	}
-	last := b[len(b)-1]
+	last := b[byteLen-1]
+	return BitlistCheckLastByte(last, limit-((byteLen-1)<<3))
+}
+
+func BitlistCheckByteLen(byteLen uint64, bitLimit uint64) error {
+	if byteLen == 0 {
+		return errors.New("bitlist is missing length delimit bit")
+	}
+	// there may not be more bytes than necessary for the N bits, +1 for the delimiting bit. (also rounds up)
+	if byteLimitWithDelimiter := (bitLimit >> 3) + 1; byteLen > byteLimitWithDelimiter {
+		return fmt.Errorf("got %d bytes, expected no more than %d bytes for bitlist",
+			byteLen, byteLimitWithDelimiter)
+	}
+	return nil
+}
+
+func BitlistCheckLastByte(last byte, limit uint64) error {
 	if last == 0 {
 		return errors.New("bitlist is invalid, trailing 0 byte")
+	}
+	if BitIndex(last) > limit {
+		return errors.New("bitlist is invalid, too many bits")
 	}
 	return nil
 }
