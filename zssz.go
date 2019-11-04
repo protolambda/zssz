@@ -13,7 +13,7 @@ import (
 	"runtime"
 )
 
-const VERSION = "v0.1.3"
+const VERSION = "v0.1.4"
 
 func Decode(r io.Reader, bytesLen uint64, val interface{}, sszTyp SSZ) error {
 	if bytesLen < sszTyp.MinLen() {
