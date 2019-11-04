@@ -14,12 +14,12 @@ import (
 type BasicHtrFn func(pointer unsafe.Pointer) [32]byte
 
 type SSZBasic struct {
-	Length   uint64
-	Encoder  EncoderFn
-	Decoder  DecoderFn
-	Verifier VerifyFn
-	HTR      BasicHtrFn
-	PrettyFn PrettyFn
+	Length     uint64
+	Encoder    EncoderFn
+	Decoder    DecoderFn
+	DryChecker DryCheckFn
+	HTR        BasicHtrFn
+	PrettyFn   PrettyFn
 }
 
 func (v *SSZBasic) FuzzMinLen() uint64 {
@@ -58,8 +58,8 @@ func (v *SSZBasic) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return v.Decoder(dr, p)
 }
 
-func (v *SSZBasic) Verify(dr *DecodingReader) error {
-	return v.Verifier(dr)
+func (v *SSZBasic) DryCheck(dr *DecodingReader) error {
+	return v.DryChecker(dr)
 }
 
 func (v *SSZBasic) HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte {
@@ -96,7 +96,7 @@ var sszBool = &SSZBasic{
 			}
 		}
 	},
-	Verifier: func(dr *DecodingReader) error {
+	DryChecker: func(dr *DecodingReader) error {
 		b, err := dr.ReadByte()
 		if err != nil {
 			return err
@@ -133,7 +133,7 @@ var sszUint8 = &SSZBasic{
 		*(*byte)(p) = b
 		return nil
 	},
-	Verifier: func(dr *DecodingReader) error {
+	DryChecker: func(dr *DecodingReader) error {
 		_, err := dr.Skip(1)
 		return err
 	},
@@ -162,7 +162,7 @@ var sszUint16 = &SSZBasic{
 		*(*uint16)(p) = v
 		return nil
 	},
-	Verifier: func(dr *DecodingReader) error {
+	DryChecker: func(dr *DecodingReader) error {
 		_, err := dr.Skip(2)
 		return err
 	},
@@ -195,7 +195,7 @@ var sszUint32 = &SSZBasic{
 		*(*uint32)(p) = v
 		return nil
 	},
-	Verifier: func(dr *DecodingReader) error {
+	DryChecker: func(dr *DecodingReader) error {
 		_, err := dr.Skip(4)
 		return err
 	},
@@ -228,7 +228,7 @@ var sszUint64 = &SSZBasic{
 		*(*uint64)(p) = v
 		return nil
 	},
-	Verifier: func(dr *DecodingReader) error {
+	DryChecker: func(dr *DecodingReader) error {
 		_, err := dr.Skip(8)
 		return err
 	},

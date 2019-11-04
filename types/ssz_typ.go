@@ -45,8 +45,8 @@ type SSZInfo interface {
 	FixedLen() uint64
 	// If the type is fixed-size
 	IsFixed() bool
-	// Verify the format of serialized data, without decoding the contents into memory
-	Verify(dr *DecodingReader) error
+	// Check the format of serialized data, without decoding the contents into memory
+	DryCheck(dr *DecodingReader) error
 }
 
 type SSZMemory interface {

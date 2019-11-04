@@ -321,15 +321,15 @@ func (v *SSZContainer) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 }
 
-func (v *SSZContainer) Verify(dr *DecodingReader) error {
+func (v *SSZContainer) DryCheck(dr *DecodingReader) error {
 	offsets, err := v.processFixedPart(dr, func(f *ContainerField) error {
-		return f.ssz.Verify(dr)
+		return f.ssz.DryCheck(dr)
 	})
 	if err != nil {
 		return err
 	}
 	return v.decodeDynamicPart(dr, offsets, func(scopedDr *DecodingReader, f *ContainerField) error {
-		return f.ssz.Verify(scopedDr)
+		return f.ssz.DryCheck(scopedDr)
 	})
 }
 

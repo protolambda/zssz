@@ -656,7 +656,7 @@ func TestDecode(t *testing.T) {
 	}
 }
 
-func TestVerify(t *testing.T) {
+func TestDryCheck(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			sszTyp, err := SSZFactory(tt.typ)
@@ -672,7 +672,7 @@ func TestVerify(t *testing.T) {
 			// See SSZ-envelope discussion
 			bytesLen := uint64(len(tt.hex)) / 2
 
-			if err := Verify(r, bytesLen, sszTyp); err != nil {
+			if err := DryCheck(r, bytesLen, sszTyp); err != nil {
 				t.Error(err)
 			}
 		})

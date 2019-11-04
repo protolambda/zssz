@@ -36,7 +36,7 @@ func Decode(r io.Reader, bytesLen uint64, val interface{}, sszTyp SSZ) error {
 	return nil
 }
 
-func Verify(r io.Reader, bytesLen uint64, sszTyp SSZ) error {
+func DryCheck(r io.Reader, bytesLen uint64, sszTyp SSZ) error {
 	if bytesLen < sszTyp.MinLen() {
 		return fmt.Errorf("expected object length is larger than given bytesLen")
 	}
@@ -45,7 +45,7 @@ func Verify(r io.Reader, bytesLen uint64, sszTyp SSZ) error {
 	if err != nil {
 		return err
 	}
-	if err := sszTyp.Verify(dr); err != nil {
+	if err := sszTyp.DryCheck(dr); err != nil {
 		return err
 	}
 	if readCount := dr.Index(); readCount != bytesLen {

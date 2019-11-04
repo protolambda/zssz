@@ -43,7 +43,7 @@ func EncodeVarSeries(encFn EncoderFn, sizeFn SizeFn, length uint64, elemMemSize 
 	return nil
 }
 
-func verifyVarSeriesFromOffsets(vFn VerifyFn, offsets []uint64, dr *DecodingReader) error {
+func dryCheckVarSeriesFromOffsets(dryCheckFn DryCheckFn, offsets []uint64, dr *DecodingReader) error {
 	for i := 0; i < len(offsets); i++ {
 		currentOffset := dr.Index()
 		if currentOffset != offsets[i] {
@@ -64,7 +64,7 @@ func verifyVarSeriesFromOffsets(vFn VerifyFn, offsets []uint64, dr *DecodingRead
 		if err != nil {
 			return err
 		}
-		if err := vFn(scoped); err != nil {
+		if err := dryCheckFn(scoped); err != nil {
 			return err
 		}
 		dr.UpdateIndexFromScoped(scoped)
@@ -111,12 +111,12 @@ func decodeVarSeriesFromOffsets(decFn DecoderFn, offsets []uint64, elemMemSize u
 	return nil
 }
 
-func VerifyVarSeries(decFn VerifyFn, length uint64, dr *DecodingReader) error {
+func DryCheckVarSeries(dryCheckFn DryCheckFn, length uint64, dr *DecodingReader) error {
 	offsets, err := ReadVarSeriesOffsets(length, dr)
 	if err != nil {
 		return err
 	}
-	return verifyVarSeriesFromOffsets(decFn, offsets, dr)
+	return dryCheckVarSeriesFromOffsets(dryCheckFn, offsets, dr)
 }
 
 func ReadVarSeriesOffsets(length uint64, dr *DecodingReader) ([]uint64, error) {
@@ -242,13 +242,13 @@ func ReadVarSliceOffsets(minElemLen uint64, bytesLen uint64, limit uint64, dr *D
 	return offsets, nil
 }
 
-func VerifyVarSlice(vFn VerifyFn, minElemLen uint64, bytesLen uint64, limit uint64, dr *DecodingReader) error {
+func DryCheckVarSlice(dryCheckFn DryCheckFn, minElemLen uint64, bytesLen uint64, limit uint64, dr *DecodingReader) error {
 	offsets, err := ReadVarSliceOffsets(minElemLen, bytesLen, limit, dr)
 	if err != nil {
 		return err
 	}
 
-	return verifyVarSeriesFromOffsets(vFn, offsets, dr)
+	return dryCheckVarSeriesFromOffsets(dryCheckFn, offsets, dr)
 }
 
 // pointer must point to the slice header to decode into

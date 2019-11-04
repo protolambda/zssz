@@ -33,9 +33,9 @@ func DecodeFixedSeries(decFn DecoderFn, length uint64, elemMemSize uintptr, dr *
 	return nil
 }
 
-func VerifyFixedSeries(vFn VerifyFn, length uint64, dr *DecodingReader) error {
+func DryCheckFixedSeries(dryCheckFn DryCheckFn, length uint64, dr *DecodingReader) error {
 	for i := uint64(0); i < length; i++ {
-		if err := vFn(dr); err != nil {
+		if err := dryCheckFn(dr); err != nil {
 			return err
 		}
 	}
@@ -54,12 +54,12 @@ func calcFixedSliceLength(elemLen uint64, bytesLen uint64, limit uint64) (uint64
 	return length, nil
 }
 
-func VerifyFixedSlice(vFn VerifyFn, elemLen uint64, bytesLen uint64, limit uint64, dr *DecodingReader) error {
+func DryCheckFixedSlice(dryCheckFn DryCheckFn, elemLen uint64, bytesLen uint64, limit uint64, dr *DecodingReader) error {
 	length, err := calcFixedSliceLength(elemLen, bytesLen, limit)
 	if err != nil {
 		return err
 	}
-	return VerifyFixedSeries(vFn, length, dr)
+	return DryCheckFixedSeries(dryCheckFn, length, dr)
 }
 
 func DecodeFixedSlice(decFn DecoderFn, elemLen uint64, bytesLen uint64, limit uint64, alloc ptrutil.SliceAllocationFn, elemMemSize uintptr, dr *DecodingReader, p unsafe.Pointer) error {

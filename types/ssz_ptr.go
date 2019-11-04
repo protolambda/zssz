@@ -71,8 +71,8 @@ func (v *SSZPtr) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return v.elemSSZ.Decode(dr, contentsPtr)
 }
 
-func (v *SSZPtr) Verify(dr *DecodingReader) error {
-	return v.elemSSZ.Verify(dr)
+func (v *SSZPtr) DryCheck(dr *DecodingReader) error {
+	return v.elemSSZ.DryCheck(dr)
 }
 
 func (v *SSZPtr) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {

@@ -121,11 +121,11 @@ func (v *SSZVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 }
 
-func (v *SSZVector) Verify(dr *DecodingReader) error {
+func (v *SSZVector) DryCheck(dr *DecodingReader) error {
 	if v.IsFixed() {
-		return VerifyFixedSeries(v.elemSSZ.Verify, v.length, dr)
+		return DryCheckFixedSeries(v.elemSSZ.DryCheck, v.length, dr)
 	} else {
-		return VerifyVarSeries(v.elemSSZ.Verify, v.length, dr)
+		return DryCheckVarSeries(v.elemSSZ.DryCheck, v.length, dr)
 	}
 }
 

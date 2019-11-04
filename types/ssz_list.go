@@ -144,11 +144,11 @@ func (v *SSZList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 }
 
-func (v *SSZList) Verify(dr *DecodingReader) error {
+func (v *SSZList) DryCheck(dr *DecodingReader) error {
 	if v.elemSSZ.IsFixed() {
-		return VerifyFixedSlice(v.elemSSZ.Verify, v.elemSSZ.FixedLen(), dr.GetBytesSpan(), v.limit, dr)
+		return DryCheckFixedSlice(v.elemSSZ.DryCheck, v.elemSSZ.FixedLen(), dr.GetBytesSpan(), v.limit, dr)
 	} else {
-		return VerifyVarSlice(v.elemSSZ.Verify, v.elemSSZ.FixedLen(), dr.GetBytesSpan(), v.limit, dr)
+		return DryCheckVarSlice(v.elemSSZ.DryCheck, v.elemSSZ.FixedLen(), dr.GetBytesSpan(), v.limit, dr)
 	}
 }
 

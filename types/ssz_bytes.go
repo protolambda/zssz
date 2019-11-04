@@ -91,7 +91,7 @@ func (v *SSZBytes) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return err
 }
 
-func (v *SSZBytes) Verify(dr *DecodingReader) error {
+func (v *SSZBytes) DryCheck(dr *DecodingReader) error {
 	_, err := dr.Skip(dr.GetBytesSpan())
 	return err
 }

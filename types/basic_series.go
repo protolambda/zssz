@@ -113,7 +113,7 @@ func CallSeries(fn func(i uint64, p unsafe.Pointer), length uint64, elemMemSize 
 	}
 }
 
-func BasicSeriesVerify(dr *DecodingReader, bytesLen uint64, bytesLimit uint64, isBoolElem bool) error {
+func BasicSeriesDryCheck(dr *DecodingReader, bytesLen uint64, bytesLimit uint64, isBoolElem bool) error {
 	if bytesLen > bytesLimit {
 		return fmt.Errorf("got %d bytes, expected no more than %d bytes", bytesLen, bytesLimit)
 	}

@@ -69,7 +69,7 @@ func (v *SSZBytesN) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return err
 }
 
-func (v *SSZBytesN) Verify(dr *DecodingReader) error {
+func (v *SSZBytesN) DryCheck(dr *DecodingReader) error {
 	_, err := dr.Skip(v.length)
 	return err
 }

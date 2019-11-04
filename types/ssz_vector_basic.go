@@ -89,8 +89,8 @@ func (v *SSZBasicVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 }
 
-func (v *SSZBasicVector) Verify(dr *DecodingReader) error {
-	return BasicSeriesVerify(dr, v.byteLen, v.byteLen, v.elemKind == reflect.Bool)
+func (v *SSZBasicVector) DryCheck(dr *DecodingReader) error {
+	return BasicSeriesDryCheck(dr, v.byteLen, v.byteLen, v.elemKind == reflect.Bool)
 }
 
 func (v *SSZBasicVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {

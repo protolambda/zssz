@@ -90,7 +90,7 @@ func (v *SSZBitvector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return bitfields.BitvectorCheck(data, v.bitLen)
 }
 
-func (v *SSZBitvector) Verify(dr *DecodingReader) error {
+func (v *SSZBitvector) DryCheck(dr *DecodingReader) error {
 	if v.bitLen == 0 {
 		return nil
 	}

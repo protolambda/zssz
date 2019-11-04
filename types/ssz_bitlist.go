@@ -122,7 +122,7 @@ func (v *SSZBitlist) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	return bitfields.BitlistCheck(data, v.bitLimit)
 }
 
-func (v *SSZBitlist) Verify(dr *DecodingReader) error {
+func (v *SSZBitlist) DryCheck(dr *DecodingReader) error {
 	span := dr.GetBytesSpan()
 	if err := bitfields.BitlistCheckByteLen(span, v.bitLimit); err != nil {
 		return err

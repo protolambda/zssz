@@ -9,7 +9,7 @@ import (
 )
 
 type DecoderFn func(dr *DecodingReader, pointer unsafe.Pointer) error
-type VerifyFn func(dr *DecodingReader) error
+type DryCheckFn func(dr *DecodingReader) error
 
 type DecodingReader struct {
 	input    io.Reader

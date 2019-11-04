@@ -138,13 +138,13 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 }
 
-func (v *SSZBasicList) Verify(dr *DecodingReader) error {
+func (v *SSZBasicList) DryCheck(dr *DecodingReader) error {
 	bytesLen := dr.GetBytesSpan()
 	if bytesLen%v.elemSSZ.Length != 0 {
-		return fmt.Errorf("cannot verify basic type array, input has length %d, not compatible with element length %d", bytesLen, v.elemSSZ.Length)
+		return fmt.Errorf("invalid basic type array, input has length %d, not compatible with element length %d", bytesLen, v.elemSSZ.Length)
 	}
 	bytesLimit := v.limit * v.elemSSZ.Length
-	return BasicSeriesVerify(dr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
+	return BasicSeriesDryCheck(dr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 }
 
 func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
