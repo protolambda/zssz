@@ -14,6 +14,8 @@ type HashTreeRootFn func(hfn Hasher, pointer unsafe.Pointer) [32]byte
 
 type HashFn func(input []byte) [32]byte
 
+// Hasher describes an interface through which we can
+// perform hash operations on byte arrays,indices,etc.
 type Hasher interface {
 	Hash(a []byte) [32]byte
 	Combi(a [32]byte, b [32]byte) [32]byte
@@ -40,12 +42,18 @@ func InitZeroHashes(hFn Hasher) {
 		ZeroHashes[i+1] = hFn.Hash(v[:])
 	}
 }
+
+// NewHasherFunc is the constructor for the object
+// that fulfills the Hasher interface.
 func NewHasherFunc(h HashFn) *HasherFunc {
 	return &HasherFunc{
 		b:        [64]byte{},
 		hashFunc: h,
 	}
 }
+
+// Hash utilizes the provided hash function for
+// the object.
 func (h *HasherFunc) Hash(a []byte) [32]byte {
 	return h.hashFunc(a)
 }
