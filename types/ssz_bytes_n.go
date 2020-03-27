@@ -74,7 +74,7 @@ func (v *SSZBytesN) DryCheck(dr *DecodingReader) error {
 	return err
 }
 
-func (v *SSZBytesN) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
+func (v *SSZBytesN) HashTreeRoot(h Hasher, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.GetSliceHeader(p, v.length)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	leafCount := (v.length + 31) >> 5

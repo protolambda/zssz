@@ -93,7 +93,7 @@ func (v *SSZBasicVector) DryCheck(dr *DecodingReader) error {
 	return BasicSeriesDryCheck(dr, v.byteLen, v.byteLen, v.elemKind == reflect.Bool)
 }
 
-func (v *SSZBasicVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
+func (v *SSZBasicVector) HashTreeRoot(h Hasher, p unsafe.Pointer) [32]byte {
 	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
 		return LittleEndianBasicSeriesHTR(h, p, v.byteLen, v.byteLen)
 	} else {

@@ -147,7 +147,7 @@ func (v *SSZBasicList) DryCheck(dr *DecodingReader) error {
 	return BasicSeriesDryCheck(dr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 }
 
-func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
+func (v *SSZBasicList) HashTreeRoot(h Hasher, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 
 	bytesLen := uint64(sh.Len) * v.elemSSZ.Length

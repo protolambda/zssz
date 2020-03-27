@@ -129,7 +129,7 @@ func (v *SSZVector) DryCheck(dr *DecodingReader) error {
 	}
 }
 
-func (v *SSZVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
+func (v *SSZVector) HashTreeRoot(h Hasher, p unsafe.Pointer) [32]byte {
 	elemHtr := v.elemSSZ.HashTreeRoot
 	elemSize := v.elemMemSize
 	leaf := func(i uint64) []byte {

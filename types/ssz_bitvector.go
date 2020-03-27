@@ -107,7 +107,7 @@ func (v *SSZBitvector) DryCheck(dr *DecodingReader) error {
 	return bitfields.BitvectorCheckLastByte(last, v.bitLen)
 }
 
-func (v *SSZBitvector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
+func (v *SSZBitvector) HashTreeRoot(h Hasher, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.GetSliceHeader(p, v.byteLen)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	leafCount := (v.byteLen + 31) >> 5

@@ -138,7 +138,7 @@ func (v *SSZBitlist) DryCheck(dr *DecodingReader) error {
 	return bitfields.BitlistCheckLastByte(last, v.bitLimit-((span-1)<<3))
 }
 
-func (v *SSZBitlist) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
+func (v *SSZBitlist) HashTreeRoot(h Hasher, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 	data := *(*[]byte)(unsafe.Pointer(sh))
 	bitLen := bitfields.BitlistLen(data)

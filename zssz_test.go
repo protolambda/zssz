@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/protolambda/zssz/bitfields"
+	"github.com/protolambda/zssz/htr"
 	. "github.com/protolambda/zssz/types"
 	"reflect"
 	"strings"
@@ -690,6 +691,7 @@ func TestHashTreeRoot(t *testing.T) {
 		copy(out[:], sha.Sum(nil))
 		return
 	}
+	hasher := htr.NewHasherFunc(hashFn)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -698,7 +700,7 @@ func TestHashTreeRoot(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			root := HashTreeRoot(hashFn, tt.value, sszTyp)
+			root := HashTreeRoot(hasher, tt.value, sszTyp)
 			res := hex.EncodeToString(root[:])
 			if res != tt.root {
 				t.Errorf("Expected root %s but got %s", tt.root, res)
@@ -718,6 +720,7 @@ func TestSigningRoot(t *testing.T) {
 		copy(out[:], sha.Sum(nil))
 		return
 	}
+	hasher := htr.NewHasherFunc(hashFn)
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -731,7 +734,7 @@ func TestSigningRoot(t *testing.T) {
 				// only test signing root for applicable types
 				return
 			}
-			root := SigningRoot(hashFn, tt.value, signedSSZ)
+			root := SigningRoot(hasher, tt.value, signedSSZ)
 			res := hex.EncodeToString(root[:])
 			if res == tt.root && root != ([32]byte{}) {
 				t.Errorf("Signing root is not different than hash-tree-root. "+

@@ -62,7 +62,7 @@ func (v *SSZBasic) DryCheck(dr *DecodingReader) error {
 	return v.DryChecker(dr)
 }
 
-func (v *SSZBasic) HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte {
+func (v *SSZBasic) HashTreeRoot(h Hasher, pointer unsafe.Pointer) [32]byte {
 	return v.HTR(pointer)
 }
 

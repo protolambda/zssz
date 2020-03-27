@@ -58,7 +58,7 @@ type SSZMemory interface {
 	// Reads from input, populates object with read data
 	Decode(dr *DecodingReader, p unsafe.Pointer) error
 	// Hashes the object read at the given pointer
-	HashTreeRoot(h HashFn, pointer unsafe.Pointer) [32]byte
+	HashTreeRoot(h Hasher, pointer unsafe.Pointer) [32]byte
 	// Pretty print
 	Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer)
 	//// Diff two objects
@@ -74,5 +74,5 @@ type SSZ interface {
 // SSZ definitions may also provide a way to compute a special hash-tree-root, for self-signed objects.
 type SignedSSZ interface {
 	SSZ
-	SigningRoot(h HashFn, p unsafe.Pointer) [32]byte
+	SigningRoot(h Hasher, p unsafe.Pointer) [32]byte
 }
