@@ -36,7 +36,7 @@ func TestBitlistLen(t *testing.T) {
 				}
 			})
 			t.Run(fmt.Sprintf("check valid %v", testCase.valid), func(t *testing.T) {
-				if err := BitlistCheck(testCase.v); err != nil && testCase.valid {
+				if err := BitlistCheck(testCase.v, testCase.n); err != nil && testCase.valid {
 					t.Errorf("expected bitlist to be valid but got error: %v", err)
 				} else if err == nil && !testCase.valid {
 					t.Error("expected bitlist to be invalid but got no error")
