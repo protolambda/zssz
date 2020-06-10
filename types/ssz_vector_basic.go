@@ -13,7 +13,7 @@ import (
 
 type SSZBasicVector struct {
 	elemKind reflect.Kind
-	elemSSZ  *SSZBasic
+	elemSSZ  SSZ
 	length   uint64
 	byteLen  uint64
 }
@@ -28,8 +28,8 @@ func NewSSZBasicVector(typ reflect.Type) (*SSZBasicVector, error) {
 	if err != nil {
 		return nil, err
 	}
-	if elemSSZ.Length != uint64(elemTyp.Size()) {
-		return nil, fmt.Errorf("basic element type has different size than SSZ type unexpectedly, ssz: %d, go: %d", elemSSZ.Length, elemTyp.Size())
+	if elemSSZ.FixedLen() != uint64(elemTyp.Size()) {
+		return nil, fmt.Errorf("basic element type has different size than SSZ type unexpectedly, ssz: %d, go: %d", elemSSZ.FixedLen(), elemTyp.Size())
 	}
 	length := uint64(typ.Len())
 
@@ -37,7 +37,7 @@ func NewSSZBasicVector(typ reflect.Type) (*SSZBasicVector, error) {
 		elemKind: elemKind,
 		elemSSZ:  elemSSZ,
 		length:   length,
-		byteLen:  length * elemSSZ.Length,
+		byteLen:  length * elemSSZ.FixedLen(),
 	}
 	return res, nil
 }
@@ -74,18 +74,18 @@ func (v *SSZBasicVector) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	// we can just write the data as-is in a few contexts:
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
-	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
+	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
 		return LittleEndianBasicSeriesEncode(eb, p, v.byteLen)
 	} else {
-		return EncodeFixedSeries(v.elemSSZ.Encoder, v.length, uintptr(v.elemSSZ.Length), eb, p)
+		return EncodeFixedSeries(v.elemSSZ.Encode, v.length, uintptr(v.elemSSZ.FixedLen()), eb, p)
 	}
 }
 
 func (v *SSZBasicVector) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
+	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
 		return LittleEndianBasicSeriesDecode(dr, p, v.byteLen, v.byteLen, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSeries(v.elemSSZ.Decoder, v.byteLen, uintptr(v.elemSSZ.FixedLen()), dr, p)
+		return DecodeFixedSeries(v.elemSSZ.Decode, v.byteLen, uintptr(v.elemSSZ.FixedLen()), dr, p)
 	}
 }
 
@@ -94,10 +94,10 @@ func (v *SSZBasicVector) DryCheck(dr *DecodingReader) error {
 }
 
 func (v *SSZBasicVector) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
-	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
+	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
 		return LittleEndianBasicSeriesHTR(h, p, v.byteLen, v.byteLen)
 	} else {
-		return BigEndianBasicSeriesHTR(h, p, v.byteLen, v.byteLen, uint8(v.elemSSZ.Length))
+		return BigEndianBasicSeriesHTR(h, p, v.byteLen, v.byteLen, uint8(v.elemSSZ.FixedLen()))
 	}
 }
 
@@ -109,13 +109,13 @@ func (v *SSZBasicVector) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer
 		v.elemSSZ.Pretty(0, w, p)
 		if i == v.length-1 {
 			w.Write("\n")
-		} else if i%(32/v.elemSSZ.Length) == 0 {
+		} else if i%(32/v.elemSSZ.FixedLen()) == 0 {
 			w.Write(",\n")
 			w.WriteIndent(indent + 1)
 		} else {
 			w.Write(", ")
 		}
-	}, v.length, uintptr(v.elemSSZ.Length), p)
+	}, v.length, uintptr(v.elemSSZ.FixedLen()), p)
 	w.WriteIndent(indent)
 	w.Write("]")
 }

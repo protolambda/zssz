@@ -15,7 +15,7 @@ import (
 type SSZBasicList struct {
 	alloc     ptrutil.SliceAllocationFn
 	elemKind  reflect.Kind
-	elemSSZ   *SSZBasic
+	elemSSZ   SSZ
 	limit     uint64
 	byteLimit uint64
 }
@@ -35,8 +35,8 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 	if err != nil {
 		return nil, err
 	}
-	if elemSSZ.Length != uint64(elemTyp.Size()) {
-		return nil, fmt.Errorf("basic element type has different size than SSZ type unexpectedly, ssz: %d, go: %d", elemSSZ.Length, elemTyp.Size())
+	if elemSSZ.FixedLen() != uint64(elemTyp.Size()) {
+		return nil, fmt.Errorf("basic element type has different size than SSZ type unexpectedly, ssz: %d, go: %d", elemSSZ.FixedLen(), elemTyp.Size())
 	}
 
 	res := &SSZBasicList{
@@ -44,7 +44,7 @@ func NewSSZBasicList(typ reflect.Type) (*SSZBasicList, error) {
 		elemKind:  elemKind,
 		elemSSZ:   elemSSZ,
 		limit:     limit,
-		byteLimit: limit * elemSSZ.Length,
+		byteLimit: limit * elemSSZ.FixedLen(),
 	}
 	return res, nil
 }
@@ -75,7 +75,7 @@ func (v *SSZBasicList) IsFixed() bool {
 
 func (v *SSZBasicList) SizeOf(p unsafe.Pointer) uint64 {
 	sh := ptrutil.ReadSliceHeader(p)
-	return uint64(sh.Len) * v.elemSSZ.Length
+	return uint64(sh.Len) * v.elemSSZ.FixedLen()
 }
 
 func (v *SSZBasicList) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
@@ -84,10 +84,10 @@ func (v *SSZBasicList) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	// we can just write the data as-is in a few contexts:
 	// - if we're in a little endian architecture
 	// - if there is no endianness to deal with
-	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		return LittleEndianBasicSeriesEncode(eb, sh.Data, uint64(sh.Len)*v.elemSSZ.Length)
+	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
+		return LittleEndianBasicSeriesEncode(eb, sh.Data, uint64(sh.Len)*v.elemSSZ.FixedLen())
 	} else {
-		return EncodeFixedSeries(v.elemSSZ.Encoder, uint64(sh.Len), uintptr(v.elemSSZ.Length), eb, sh.Data)
+		return EncodeFixedSeries(v.elemSSZ.Encode, uint64(sh.Len), uintptr(v.elemSSZ.FixedLen()), eb, sh.Data)
 	}
 }
 
@@ -104,29 +104,29 @@ func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) erro
 		return nil
 	}
 	bytesLen := x % span
-	bytesLen -= bytesLen % v.elemSSZ.Length
+	bytesLen -= bytesLen % v.elemSSZ.FixedLen()
 
-	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
-		bytesLimit := v.limit * v.elemSSZ.Length
+	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
+		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.FixedLen())
+		bytesLimit := v.limit * v.elemSSZ.FixedLen()
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.FixedLen()), dr, p)
 	}
 }
 
 func (v *SSZBasicList) decode(dr *DecodingReader, p unsafe.Pointer) error {
 	bytesLen := dr.GetBytesSpan()
-	if bytesLen%v.elemSSZ.Length != 0 {
-		return fmt.Errorf("cannot decode basic type array, input has length %d, not compatible with element length %d", bytesLen, v.elemSSZ.Length)
+	if bytesLen%v.elemSSZ.FixedLen() != 0 {
+		return fmt.Errorf("cannot decode basic type array, input has length %d, not compatible with element length %d", bytesLen, v.elemSSZ.FixedLen())
 	}
 
-	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
-		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.Length)
-		bytesLimit := v.limit * v.elemSSZ.Length
+	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
+		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.FixedLen())
+		bytesLimit := v.limit * v.elemSSZ.FixedLen()
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
-		return DecodeFixedSlice(v.elemSSZ.Decoder, v.elemSSZ.Length, bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.Length), dr, p)
+		return DecodeFixedSlice(v.elemSSZ.Decode, v.elemSSZ.FixedLen(), bytesLen, v.limit, v.alloc, uintptr(v.elemSSZ.FixedLen()), dr, p)
 	}
 }
 
@@ -140,22 +140,22 @@ func (v *SSZBasicList) Decode(dr *DecodingReader, p unsafe.Pointer) error {
 
 func (v *SSZBasicList) DryCheck(dr *DecodingReader) error {
 	bytesLen := dr.GetBytesSpan()
-	if bytesLen%v.elemSSZ.Length != 0 {
-		return fmt.Errorf("invalid basic type array, input has length %d, not compatible with element length %d", bytesLen, v.elemSSZ.Length)
+	if bytesLen%v.elemSSZ.FixedLen() != 0 {
+		return fmt.Errorf("invalid basic type array, input has length %d, not compatible with element length %d", bytesLen, v.elemSSZ.FixedLen())
 	}
-	bytesLimit := v.limit * v.elemSSZ.Length
+	bytesLimit := v.limit * v.elemSSZ.FixedLen()
 	return BasicSeriesDryCheck(dr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 }
 
 func (v *SSZBasicList) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
 	sh := ptrutil.ReadSliceHeader(p)
 
-	bytesLen := uint64(sh.Len) * v.elemSSZ.Length
-	bytesLimit := v.limit * v.elemSSZ.Length
-	if endianness.IsLittleEndian || v.elemSSZ.Length == 1 {
+	bytesLen := uint64(sh.Len) * v.elemSSZ.FixedLen()
+	bytesLimit := v.limit * v.elemSSZ.FixedLen()
+	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
 		return h.MixIn(LittleEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit), uint64(sh.Len))
 	} else {
-		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit, uint8(v.elemSSZ.Length)), uint64(sh.Len))
+		return h.MixIn(BigEndianBasicSeriesHTR(h, sh.Data, bytesLen, bytesLimit, uint8(v.elemSSZ.FixedLen())), uint64(sh.Len))
 	}
 }
 
@@ -169,13 +169,13 @@ func (v *SSZBasicList) Pretty(indent uint32, w *PrettyWriter, p unsafe.Pointer) 
 		v.elemSSZ.Pretty(0, w, p)
 		if i == length-1 {
 			w.Write("\n")
-		} else if i%(32/v.elemSSZ.Length) == 0 {
+		} else if i%(32/v.elemSSZ.FixedLen()) == 0 {
 			w.Write(",\n")
 			w.WriteIndent(indent + 1)
 		} else {
 			w.Write(", ")
 		}
-	}, length, uintptr(v.elemSSZ.Length), sh.Data)
+	}, length, uintptr(v.elemSSZ.FixedLen()), sh.Data)
 	w.WriteIndent(indent)
 	w.Write("]")
 }
