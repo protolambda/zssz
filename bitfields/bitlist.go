@@ -9,7 +9,7 @@ import (
 type BitlistMeta interface {
 	// Length (in bits) of the Bitlist.
 	SizedBits
-	// Limit (in bits) of the Bitlist.
+	// BitLimit (in bits) of the Bitlist.
 	lists.List
 }
 

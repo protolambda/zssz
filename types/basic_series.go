@@ -7,8 +7,26 @@ import (
 	. "github.com/protolambda/zssz/htr"
 	"github.com/protolambda/zssz/merkle"
 	"github.com/protolambda/zssz/util/ptrutil"
+	"reflect"
 	"unsafe"
 )
+
+func GetBasicSSZElemType(kind reflect.Kind) (SSZ, error) {
+	switch kind {
+	case reflect.Bool:
+		return SSZBool{}, nil
+	case reflect.Uint8:
+		return SSZUint8{}, nil
+	case reflect.Uint16:
+		return SSZUint16{}, nil
+	case reflect.Uint32:
+		return SSZUint32{}, nil
+	case reflect.Uint64:
+		return SSZUint64{}, nil
+	default:
+		return nil, fmt.Errorf("kind %d is not a basic type", kind)
+	}
+}
 
 // WARNING: for little-endian architectures only, or the elem-length has to be 1 byte
 func LittleEndianBasicSeriesEncode(eb *EncodingWriter, p unsafe.Pointer, bytesLen uint64) error {

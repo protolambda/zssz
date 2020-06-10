@@ -17,15 +17,15 @@ func DefaultSSZFactory(factory SSZFactoryFn, typ reflect.Type) (SSZ, error) {
 	case reflect.Ptr:
 		return NewSSZPtr(factory, typ)
 	case reflect.Bool:
-		return sszBool, nil
+		return SSZBool{}, nil
 	case reflect.Uint8:
-		return sszUint8, nil
+		return SSZUint8{}, nil
 	case reflect.Uint16:
-		return sszUint16, nil
+		return SSZUint16{}, nil
 	case reflect.Uint32:
-		return sszUint32, nil
+		return SSZUint32{}, nil
 	case reflect.Uint64:
-		return sszUint64, nil
+		return SSZUint64{}, nil
 	case reflect.Struct:
 		return NewSSZContainer(factory, typ)
 	case reflect.Array:
