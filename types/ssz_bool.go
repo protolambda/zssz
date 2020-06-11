@@ -76,7 +76,7 @@ func (v SSZBool) DryCheck(dr *DecodingReader) error {
 	return nil
 }
 
-func (v SSZBool) HashTreeRoot(h HashFn, p unsafe.Pointer) (out [32]byte) {
+func (v SSZBool) HashTreeRoot(h MerkleFn, p unsafe.Pointer) (out [32]byte) {
 	out[0] = *(*byte)(p)
 	return
 }

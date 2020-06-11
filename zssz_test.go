@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/protolambda/zssz/bitfields"
+	"github.com/protolambda/zssz/htr"
 	. "github.com/protolambda/zssz/types"
 	"reflect"
 	"strings"
@@ -684,12 +685,12 @@ func TestHashTreeRoot(t *testing.T) {
 
 	// re-use a hash function
 	sha := sha256.New()
-	hashFn := func(input []byte) (out [32]byte) {
+	hashFn := htr.HashFn(func(input []byte) (out [32]byte) {
 		sha.Reset()
 		sha.Write(input)
 		copy(out[:], sha.Sum(nil))
 		return
-	}
+	})
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -712,12 +713,12 @@ func TestSigningRoot(t *testing.T) {
 
 	// re-use a hash function
 	sha := sha256.New()
-	hashFn := func(input []byte) (out [32]byte) {
+	hashFn := htr.HashFn(func(input []byte) (out [32]byte) {
 		sha.Reset()
 		sha.Write(input)
 		copy(out[:], sha.Sum(nil))
 		return
-	}
+	})
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {

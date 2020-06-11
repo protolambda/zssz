@@ -75,7 +75,7 @@ func (v *SSZPtr) DryCheck(dr *DecodingReader) error {
 	return v.elemSSZ.DryCheck(dr)
 }
 
-func (v *SSZPtr) HashTreeRoot(h HashFn, p unsafe.Pointer) [32]byte {
+func (v *SSZPtr) HashTreeRoot(h MerkleFn, p unsafe.Pointer) [32]byte {
 	innerPtr := unsafe.Pointer(*(*uintptr)(p))
 	return v.elemSSZ.HashTreeRoot(h, innerPtr)
 }

@@ -16,6 +16,7 @@ type DecodingReader struct {
 	i        uint64
 	max      uint64
 	fuzzMode bool
+	scratch  [32]byte
 }
 
 func NewDecodingReader(input io.Reader) *DecodingReader {
@@ -92,27 +93,23 @@ func (dr *DecodingReader) Read(p []byte) (int, error) {
 }
 
 func (dr *DecodingReader) ReadByte() (byte, error) {
-	tmp := make([]byte, 1, 1)
-	_, err := dr.Read(tmp)
-	return tmp[0], err
+	_, err := dr.Read(dr.scratch[0:1])
+	return dr.scratch[0], err
 }
 
 func (dr *DecodingReader) ReadUint16() (uint16, error) {
-	tmp := make([]byte, 2, 2)
-	_, err := dr.Read(tmp)
-	return binary.LittleEndian.Uint16(tmp), err
+	_, err := dr.Read(dr.scratch[0:2])
+	return binary.LittleEndian.Uint16(dr.scratch[0:2]), err
 }
 
 func (dr *DecodingReader) ReadUint32() (uint32, error) {
-	tmp := make([]byte, 4, 4)
-	_, err := dr.Read(tmp)
-	return binary.LittleEndian.Uint32(tmp), err
+	_, err := dr.Read(dr.scratch[0:4])
+	return binary.LittleEndian.Uint32(dr.scratch[0:4]), err
 }
 
 func (dr *DecodingReader) ReadUint64() (uint64, error) {
-	tmp := make([]byte, 8, 8)
-	_, err := dr.Read(tmp)
-	return binary.LittleEndian.Uint64(tmp), err
+	_, err := dr.Read(dr.scratch[0:8])
+	return binary.LittleEndian.Uint64(dr.scratch[0:8]), err
 }
 
 // returns the remaining span that can be read

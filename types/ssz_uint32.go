@@ -41,9 +41,8 @@ func (t SSZUint32) SizeOf(p unsafe.Pointer) uint64 {
 }
 
 func (t SSZUint32) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
-	v := [4]byte{}
-	binary.LittleEndian.PutUint32(v[:], *(*uint32)(p))
-	return eb.Write(v[:])
+	binary.LittleEndian.PutUint32(eb.Scratch[0:4], *(*uint32)(p))
+	return eb.Write(eb.Scratch[0:4])
 }
 
 func (t SSZUint32) Decode(dr *DecodingReader, p unsafe.Pointer) error {
@@ -60,7 +59,7 @@ func (t SSZUint32) DryCheck(dr *DecodingReader) error {
 	return err
 }
 
-func (t SSZUint32) HashTreeRoot(h HashFn, p unsafe.Pointer) (out [32]byte) {
+func (t SSZUint32) HashTreeRoot(h MerkleFn, p unsafe.Pointer) (out [32]byte) {
 	binary.LittleEndian.PutUint32(out[:], *(*uint32)(p))
 	return
 }

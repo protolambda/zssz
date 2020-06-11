@@ -6,8 +6,14 @@ import (
 	"unsafe"
 )
 
-type HashTreeRootFn func(hfn HashFn, pointer unsafe.Pointer) [32]byte
+type MerkleFn interface {
+	Combi(a [32]byte, b [32]byte) [32]byte
+	MixIn(a [32]byte, i uint64) [32]byte
+}
 
+type HashTreeRootFn func(mfn MerkleFn, pointer unsafe.Pointer) [32]byte
+
+// Warning, it implements a MerkleFn, but it is preferable to use a cached (Scratchpad) version of the merkle fn.
 type HashFn func(input []byte) [32]byte
 
 // Excluding the full zero bytes32 itself

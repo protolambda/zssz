@@ -57,7 +57,7 @@ func (t SSZUint8) DryCheck(dr *DecodingReader) error {
 	return err
 }
 
-func (t SSZUint8) HashTreeRoot(h HashFn, p unsafe.Pointer) (out [32]byte) {
+func (t SSZUint8) HashTreeRoot(h MerkleFn, p unsafe.Pointer) (out [32]byte) {
 	out[0] = *(*byte)(p)
 	return
 }

@@ -106,7 +106,7 @@ func Pretty(w io.Writer, indent string, val interface{}, sszTyp SSZ) {
 	runtime.KeepAlive(&val)
 }
 
-func HashTreeRoot(h HashFn, val interface{}, sszTyp SSZ) [32]byte {
+func HashTreeRoot(h MerkleFn, val interface{}, sszTyp SSZ) [32]byte {
 	p := ptrutil.IfacePtrToPtr(&val)
 	out := sszTyp.HashTreeRoot(h, p)
 	// make sure the data of the object is kept around up to this point.
@@ -114,7 +114,7 @@ func HashTreeRoot(h HashFn, val interface{}, sszTyp SSZ) [32]byte {
 	return out
 }
 
-func SigningRoot(h HashFn, val interface{}, sszTyp SignedSSZ) [32]byte {
+func SigningRoot(h MerkleFn, val interface{}, sszTyp SignedSSZ) [32]byte {
 	p := ptrutil.IfacePtrToPtr(&val)
 	out := sszTyp.SigningRoot(h, p)
 	// make sure the data of the object is kept around up to this point.

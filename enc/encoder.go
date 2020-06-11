@@ -13,6 +13,7 @@ type EncoderFn func(eb *EncodingWriter, pointer unsafe.Pointer) error
 type EncodingWriter struct {
 	w io.Writer
 	n int
+	Scratch [32]byte
 }
 
 func NewEncodingWriter(w io.Writer) *EncodingWriter {
@@ -33,7 +34,8 @@ func (ew *EncodingWriter) Write(p []byte) error {
 
 // Write a single byte to the buffer.
 func (ew *EncodingWriter) WriteByte(v byte) error {
-	return ew.Write([]byte{v})
+	ew.Scratch[0] = v
+	return ew.Write(ew.Scratch[0:1])
 }
 
 // Writes an offset for an element
@@ -48,8 +50,7 @@ func (ew *EncodingWriter) WriteOffset(prevOffset uint64, elemLen uint64) (offset
 	if offset >= (uint64(1) << 32) {
 		panic("offset too large, not uint32")
 	}
-	tmp := make([]byte, 4, 4)
-	binary.LittleEndian.PutUint32(tmp, uint32(offset))
-	err = ew.Write(tmp)
+	binary.LittleEndian.PutUint32(ew.Scratch[0:4], uint32(offset))
+	err = ew.Write(ew.Scratch[0:4])
 	return
 }
