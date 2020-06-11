@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	. "github.com/protolambda/zssz/dec"
 	. "github.com/protolambda/zssz/enc"
@@ -67,8 +68,15 @@ func (v *SSZPtr) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 }
 
 func (v *SSZPtr) Decode(dr *DecodingReader, p unsafe.Pointer) error {
-	contentsPtr := v.alloc(p)
-	return v.elemSSZ.Decode(dr, contentsPtr)
+	if p == unsafe.Pointer(nil) {
+		return errors.New("cannot decode into nil pointer")
+	}
+	if *(*uintptr)(p) == uintptr(0) {
+		contentsPtr := v.alloc(p)
+		return v.elemSSZ.Decode(dr, contentsPtr)
+	} else {
+		return v.elemSSZ.Decode(dr, unsafe.Pointer(*(*uintptr)(p)))
+	}
 }
 
 func (v *SSZPtr) DryCheck(dr *DecodingReader) error {

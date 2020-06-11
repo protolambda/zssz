@@ -32,6 +32,12 @@ type fixedTestStruct struct {
 	C uint32
 }
 
+type withPointerChildren struct {
+	A *smallTestStruct
+	B fixedTestStruct
+	C *uint64
+}
+
 type uint16List128 []uint16
 
 func (li *uint16List128) Limit() uint64 {
@@ -243,6 +249,8 @@ type sszTestCase struct {
 // note: expected strings are in little-endian, hence the seemingly out of order bytes.
 var testCases []sszTestCase
 
+var valUint64 uint64 = 0x42
+
 func init() {
 	var zeroHashes = []string{chunk("")}
 
@@ -364,6 +372,17 @@ func init() {
 				zeroHashes[5:7]), chunk("13000000")),
 			getTyp((*list128bytes32)(nil)),
 		},
+		{"withPointerChildren", withPointerChildren{
+			A: &smallTestStruct{A: 0x1122, B: 0x3344},
+			B: fixedTestStruct{A: 0xab, B: 0xaabbccdd00112233, C: 0x12345678},
+			C: &valUint64,
+		}, "22114433" + "ab33221100ddccbbaa78563412" + "4200000000000000", h(
+			h(
+				h(chunk("2211"), chunk("4433")),
+				h(h(chunk("ab"), chunk("33221100ddccbbaa")), h(chunk("78563412"), chunk(""))),
+			),
+			h(chunk("42"), chunk("")),
+		), getTyp((*withPointerChildren)(nil))},
 		{"fixedTestStruct", fixedTestStruct{A: 0xab, B: 0xaabbccdd00112233, C: 0x12345678}, "ab33221100ddccbbaa78563412",
 			h(h(chunk("ab"), chunk("33221100ddccbbaa")), h(chunk("78563412"), chunk(""))), getTyp((*fixedTestStruct)(nil))},
 		{"VarTestStruct nil", VarTestStruct{A: 0xabcd, B: nil, C: 0xff}, "cdab07000000ff",

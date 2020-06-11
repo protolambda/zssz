@@ -68,8 +68,6 @@ func DecodeFixedSlice(decFn DecoderFn, elemLen uint64, bytesLen uint64, limit ui
 		return err
 	}
 
-	// it's a slice, we only have a header, we still need to allocate space for its data
-	contentsPtr := alloc(p, length)
-
+	contentsPtr := alloc.MutateLenOrAllocNew(p, length)
 	return DecodeFixedSeries(decFn, length, elemMemSize, dr, contentsPtr)
 }

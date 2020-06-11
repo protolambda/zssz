@@ -107,7 +107,7 @@ func (v *SSZBasicList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) erro
 	bytesLen -= bytesLen % v.elemSSZ.FixedLen()
 
 	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
-		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.FixedLen())
+		contentsPtr := v.alloc.MutateLenOrAllocNew(p, bytesLen/v.elemSSZ.FixedLen())
 		bytesLimit := v.limit * v.elemSSZ.FixedLen()
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {
@@ -122,7 +122,7 @@ func (v *SSZBasicList) decode(dr *DecodingReader, p unsafe.Pointer) error {
 	}
 
 	if endianness.IsLittleEndian || v.elemSSZ.FixedLen() == 1 {
-		contentsPtr := v.alloc(p, bytesLen/v.elemSSZ.FixedLen())
+		contentsPtr := v.alloc.MutateLenOrAllocNew(p, bytesLen/v.elemSSZ.FixedLen())
 		bytesLimit := v.limit * v.elemSSZ.FixedLen()
 		return LittleEndianBasicSeriesDecode(dr, contentsPtr, bytesLen, bytesLimit, v.elemKind == reflect.Bool)
 	} else {

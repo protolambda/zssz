@@ -119,7 +119,7 @@ func (v *SSZList) decodeFuzzmode(dr *DecodingReader, p unsafe.Pointer) error {
 	if span != 0 {
 		length = (x % span) / v.elemSSZ.FuzzMinLen()
 	}
-	contentsPtr := v.alloc(p, length)
+	contentsPtr := v.alloc.MutateLenOrAllocNew(p, length)
 	if v.elemSSZ.IsFixed() {
 		return DecodeFixedSeries(v.elemSSZ.Decode, length, v.elemMemSize, dr, contentsPtr)
 	} else {

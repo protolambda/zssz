@@ -8,6 +8,22 @@ import (
 
 type SliceAllocationFn func(p unsafe.Pointer, length uint64) unsafe.Pointer
 
+// Checks the capacity of the slice first. If sufficient, it mutates the length and returns the pointer to the contents.
+// If not sufficient, it allocates a new slice using the underlying allocation function,
+// and returns the pointer to the new contents.
+func (f SliceAllocationFn) MutateLenOrAllocNew(p unsafe.Pointer, length uint64) unsafe.Pointer {
+	header := ReadSliceHeader(p)
+	if uint64(header.Cap) < length {
+		// We don't want elements to be put in the slice header memory,
+		// instead, we allocate the slice data with the allocation function,
+		// and change the contents-pointer in the header.
+		return f(p, length)
+	} else {
+		header.Len = int(length)
+		return header.Data
+	}
+}
+
 type AllocationFn func(p unsafe.Pointer) unsafe.Pointer
 
 var bytesSliceTyp = reflect.TypeOf(new([]byte)).Elem()

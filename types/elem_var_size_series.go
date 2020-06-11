@@ -261,9 +261,6 @@ func DecodeVarSlice(decFn DecoderFn, minElemLen uint64, bytesLen uint64, limit u
 		return err
 	}
 
-	// We don't want elements to be put in the slice header memory,
-	// instead, we allocate the slice data, and change the contents-pointer in the header.
-	contentsPtr := alloc(p, uint64(len(offsets)))
-
+	contentsPtr := alloc.MutateLenOrAllocNew(p, uint64(len(offsets)))
 	return decodeVarSeriesFromOffsets(decFn, offsets, elemMemSize, dr, contentsPtr)
 }
