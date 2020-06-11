@@ -174,11 +174,22 @@ func (v *SSZContainer) SizeOf(p unsafe.Pointer) uint64 {
 }
 
 func (v *SSZContainer) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
+	// hot-path for common case of fixed-size container
+	if v.isFixedLen {
+		for i := range v.Fields {
+			f := &v.Fields[i]
+			if err := f.ssz.Encode(eb, f.ptrFn(p)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	// the previous offset, to calculate a new offset from, starting after the fixed data.
 	prevOffset := v.fixedLen
 	// span of the previous var-size element
 	prevSize := uint64(0)
-	for _, f := range v.Fields {
+	for i := range v.Fields {
+		f := &v.Fields[i]
 		if f.isFixed {
 			if err := f.ssz.Encode(eb, f.ptrFn(p)); err != nil {
 				return err
@@ -194,7 +205,8 @@ func (v *SSZContainer) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	}
 	// Only iterate over and write dynamic parts if we need to.
 	if !v.isFixedLen {
-		for _, f := range v.Fields {
+		for i := range v.Fields {
+			f := &v.Fields[i]
 			if !f.isFixed {
 				if err := f.ssz.Encode(eb, f.ptrFn(p)); err != nil {
 					return err

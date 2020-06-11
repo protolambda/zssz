@@ -12,12 +12,13 @@ type EncoderFn func(eb *EncodingWriter, pointer unsafe.Pointer) error
 
 type EncodingWriter struct {
 	w       io.Writer
+	wfn     func(p []byte) (n int, err error)
 	n       int
 	Scratch [32]byte
 }
 
 func NewEncodingWriter(w io.Writer) *EncodingWriter {
-	return &EncodingWriter{w: w, n: 0}
+	return &EncodingWriter{w: w, wfn: w.Write, n: 0}
 }
 
 // How many bytes were written to the underlying io.Writer before ending encoding (for handling errors)
@@ -27,7 +28,7 @@ func (ew *EncodingWriter) Written() int {
 
 // Write writes len(p) bytes from p to the underlying accumulated buffer.
 func (ew *EncodingWriter) Write(p []byte) error {
-	n, err := ew.w.Write(p)
+	n, err := ew.wfn(p)
 	ew.n += n
 	return err
 }
