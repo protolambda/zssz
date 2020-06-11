@@ -11,8 +11,8 @@ type SizeFn func(pointer unsafe.Pointer) uint64
 type EncoderFn func(eb *EncodingWriter, pointer unsafe.Pointer) error
 
 type EncodingWriter struct {
-	w io.Writer
-	n int
+	w       io.Writer
+	n       int
 	Scratch [32]byte
 }
 

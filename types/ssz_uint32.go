@@ -10,7 +10,7 @@ import (
 	"unsafe"
 )
 
-type SSZUint32 struct {}
+type SSZUint32 struct{}
 
 func (t SSZUint32) FuzzMinLen() uint64 {
 	return 4

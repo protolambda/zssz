@@ -9,7 +9,7 @@ import (
 	"unsafe"
 )
 
-type SSZBool struct {}
+type SSZBool struct{}
 
 func (v SSZBool) FuzzMinLen() uint64 {
 	return 1
