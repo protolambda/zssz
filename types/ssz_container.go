@@ -29,6 +29,7 @@ type ContainerField struct {
 	name     string
 	pureName string
 	ptrFn    FieldPtrFn
+	isFixed  bool
 }
 
 func (c *ContainerField) Wrap(name string, memOffset uintptr) ContainerField {
@@ -37,6 +38,7 @@ func (c *ContainerField) Wrap(name string, memOffset uintptr) ContainerField {
 		name:     name + ">" + c.name,
 		pureName: c.name,
 		ptrFn:    c.ptrFn.WrapOffset(memOffset),
+		isFixed:  c.ssz.IsFixed(),
 	}
 }
 
@@ -94,7 +96,9 @@ func getFields(factory SSZFactoryFn, f *reflect.StructField) (out []ContainerFie
 		}
 	}
 
-	out = append(out, ContainerField{ssz: fieldSSZ, pureName: f.Name, name: f.Name, ptrFn: GetOffsetPtrFn(f.Offset)})
+	out = append(out, ContainerField{
+		ssz: fieldSSZ, pureName: f.Name, name: f.Name,
+		ptrFn: GetOffsetPtrFn(f.Offset), isFixed: fieldSSZ.IsFixed()})
 	return
 }
 
@@ -175,7 +179,7 @@ func (v *SSZContainer) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 	// span of the previous var-size element
 	prevSize := uint64(0)
 	for _, f := range v.Fields {
-		if f.ssz.IsFixed() {
+		if f.isFixed {
 			if err := f.ssz.Encode(eb, f.ptrFn(p)); err != nil {
 				return err
 			}
@@ -189,9 +193,9 @@ func (v *SSZContainer) Encode(eb *EncodingWriter, p unsafe.Pointer) error {
 		}
 	}
 	// Only iterate over and write dynamic parts if we need to.
-	if !v.IsFixed() {
+	if !v.isFixedLen {
 		for _, f := range v.Fields {
-			if !f.ssz.IsFixed() {
+			if !f.isFixed {
 				if err := f.ssz.Encode(eb, f.ptrFn(p)); err != nil {
 					return err
 				}
